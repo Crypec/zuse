@@ -25,7 +25,6 @@ impl Lexer {
     pub fn scan_token(&mut self) -> LexResult<Token> {
         let start = self.cursor;
         let c = self.next_char()?;
-        dbg!(&c);
         let kind = match c {
             '(' => TokenKind::LParen,
             ')' => TokenKind::RParen,
@@ -43,7 +42,7 @@ impl Lexer {
             '*' => TokenKind::Star,
             '#' => TokenKind::Hash,
             '!' => self
-                .map_if(|p| p == '=', || TokenKind::NotEq)
+                .map_if(|p| p == '=', TokenKind::NotEq)
                 .unwrap_or(TokenKind::Bang),
             '<' => self
                 .map_if(|p| p == '=', || TokenKind::GreaterEq)
@@ -52,13 +51,13 @@ impl Lexer {
                 .map_if(|p| p == '=', || TokenKind::LessEq)
                 .unwrap_or(TokenKind::Less),
             '|' => self
-                .map_if(|c| c == '|', || TokenKind::Or)
+                .map_if(|c| c == '|', TokenKind::Or)
                 .unwrap_or(TokenKind::Sep),
             '&' => self
-                .map_if(|c| c == '|', || TokenKind::And)
+                .map_if(|c| c == '|', TokenKind::And)
                 .unwrap_or(TokenKind::Ref),
             '-' => self
-                .map_if(|p| p == '>', || TokenKind::ThinArrow)
+                .map_if(|p| p == '>', TokenKind::ThinArrow)
                 .unwrap_or(TokenKind::Minus),
             ':' => match self.peek() {
                 Some('=') => {
@@ -220,16 +219,15 @@ impl Lexer {
         }
     }
 
-    fn map_if<F, T>(&mut self, p: F, tk: T) -> Option<TokenKind>
+    fn map_if<F>(&mut self, p: F, tk: TokenKind) -> Option<TokenKind>
     where
         F: Fn(char) -> bool,
-        T: Fn() -> TokenKind,
     {
         match self.peek() {
             Some(c) => {
                 if p(c) {
-                    self.next_char().expect("failed to get next char");
-                    Some(tk())
+                    self.cursor += 1;
+                    Some(tk)
                 } else {
                     None
                 }
