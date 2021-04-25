@@ -41,3 +41,12 @@ pub struct Suggestion {
     #[builder(setter(into))]
     pub url: String,
 }
+
+impl Diagnostic {
+    pub fn add_note<S: Into<String>>(&mut self, note: S) {
+        self.note = Some(note.into());
+    }
+    pub fn set_msg<S: Into<String>>(&mut self, msg: S) {
+        self.msg = msg.into();
+    }
+}
