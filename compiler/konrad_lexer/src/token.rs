@@ -1,4 +1,4 @@
-use konrad_ast::ast::Lit;
+use konrad_ast::ast::{Lit, RangeKind};
 use konrad_span::span::Span;
 use parse_display::Display;
 
@@ -106,7 +106,7 @@ pub enum TokenKind {
 
     // inclusive ranges are handled by the parser
     #[display("{0}")]
-    Range(Range),
+    Range(RangeKind),
 
     #[display("!")]
     Bang,
@@ -197,15 +197,6 @@ pub enum Keyword {
 
     #[display("type")]
     Type,
-}
-
-#[derive(Debug, Clone, Display, PartialEq, Eq)]
-pub enum Range {
-    #[display("..=")]
-    Inclusive,
-
-    #[display("..=")]
-    Exclusive,
 }
 
 impl std::str::FromStr for Keyword {

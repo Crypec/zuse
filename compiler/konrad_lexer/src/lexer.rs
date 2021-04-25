@@ -1,5 +1,5 @@
 use crate::token::*;
-use konrad_ast::ast::Lit;
+use konrad_ast::ast::{Lit, RangeKind};
 use konrad_err::diagnostic::*;
 use konrad_span::span::Span;
 use std::path::PathBuf;
@@ -89,11 +89,11 @@ impl Lexer {
             '.' => match (self.peek_n(1), self.peek_n(2)) {
                 (Some('.'), Some('=')) => {
                     self.cursor += 2;
-                    TokenKind::Range(Range::Inclusive)
+                    TokenKind::Range(RangeKind::Inclusive)
                 }
                 (Some('.'), _) => {
                     self.cursor += 1;
-                    TokenKind::Range(Range::Exclusive)
+                    TokenKind::Range(RangeKind::Exclusive)
                 }
                 (_, _) => TokenKind::Dot,
             },

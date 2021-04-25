@@ -11,3 +11,11 @@ pub enum Lit {
     #[display("{}")]
     Text(String),
 }
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
+pub enum RangeKind {
+    #[display("..=")]
+    Inclusive,
+    #[display("..")]
+    Exclusive,
+}
