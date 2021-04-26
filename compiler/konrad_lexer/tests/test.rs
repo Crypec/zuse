@@ -1,4 +1,4 @@
-use konrad_ast::ast::Lit;
+use konrad_ast::ast::{Lit, RangeKind};
 use konrad_err::diagnostic::*;
 use konrad_lexer::lexer::Lexer;
 use konrad_lexer::token::*;
@@ -61,9 +61,9 @@ fn lex_person_struct_decl() {
         TokenKind::Ident("relatives".to_string()),
         TokenKind::Col,
         TokenKind::Ident("Vec".to_string()),
-        TokenKind::Greater,
-        TokenKind::Ident("String".to_string()),
         TokenKind::Less,
+        TokenKind::Ident("String".to_string()),
+        TokenKind::Greater,
         TokenKind::Comma,
         TokenKind::RBrace,
     );
@@ -128,7 +128,7 @@ fn lex_range_decl() {
         TokenKind::Ident("ArenaIndex".into()),
         TokenKind::ColCol,
         TokenKind::Lit(Lit::Num(0)),
-        TokenKind::Range(Range::Exclusive),
+        TokenKind::Range(RangeKind::Exclusive),
         TokenKind::Lit(Lit::Num(10)),
         TokenKind::Semi,
     );
@@ -151,7 +151,7 @@ fn lex_punctuation_tokens() {
         TokenKind::Comma,
         TokenKind::Semi,
         TokenKind::Dot,
-        TokenKind::Range(Range::Exclusive),
+        TokenKind::Range(RangeKind::Exclusive),
         TokenKind::Eq,
         TokenKind::WildCard,
         TokenKind::ColEq,
@@ -210,9 +210,9 @@ fn lex_keywords() {
 fn lex_range() {
     assert_tokens_eq!(
         ".. ..= .. = .",
-        TokenKind::Range(Range::Exclusive),
-        TokenKind::Range(Range::Inclusive),
-        TokenKind::Range(Range::Exclusive),
+        TokenKind::Range(RangeKind::Exclusive),
+        TokenKind::Range(RangeKind::Inclusive),
+        TokenKind::Range(RangeKind::Exclusive),
         TokenKind::Eq,
         TokenKind::Dot,
     );
