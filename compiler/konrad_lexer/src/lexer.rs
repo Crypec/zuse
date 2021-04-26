@@ -50,6 +50,14 @@ impl Lexer {
             '>' => self
                 .map_if(|p| p == '=', || TokenKind::LessEq)
                 .unwrap_or(TokenKind::Less),
+            '<' if self.peek() == Some('<') => {
+                self.cursor += 1;
+                TokenKind::RShift
+            }
+            '>' if self.peek() == Some('>') => {
+                self.cursor += 1;
+                TokenKind::LShift
+            }
             '|' => self
                 .map_if(|c| c == '|', TokenKind::Or)
                 .unwrap_or(TokenKind::Sep),

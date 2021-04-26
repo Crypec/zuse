@@ -140,6 +140,12 @@ pub enum TokenKind {
     #[display("=<")]
     LessEq,
 
+    #[display(">>")]
+    LShift,
+
+    #[display("<<")]
+    RShift,
+
     #[display("{0}")]
     Keyword(Keyword),
 }
