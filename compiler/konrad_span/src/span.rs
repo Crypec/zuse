@@ -33,6 +33,21 @@ impl Span {
         let path = path.into();
         Self { start, end, path }
     }
+
+    fn merge(&self, other: &Self) -> Self {
+        debug_assert_eq!(self.path, other.path, "Paths must be equal");
+
+        let start_line = std::cmp::min(self.start.line, self.end.line);
+        let end_line = std::cmp::max(self.start.line, self.end.line);
+
+        let start_col = std::cmp::min(self.start.col, self.end.col);
+        let end_col = std::cmp::max(self.start.col, self.end.col);
+
+        Self {
+            start: LineColumn::new(start_line, start_col),
+            end: LineColumn::new(end_line, end_col),
+            path: self.path.clone(),
+        }
     }
 }
 
