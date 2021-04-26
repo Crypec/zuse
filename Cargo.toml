@@ -3,7 +3,8 @@
 members = [
 	"compiler/konrad",
 	"compiler/konrad_ast",
+	"compiler/konrad_span",
 	"compiler/konrad_err",
 	"compiler/konrad_lexer",
-	"compiler/konrad_span",
+	"compiler/konrad_parser"
 ]
