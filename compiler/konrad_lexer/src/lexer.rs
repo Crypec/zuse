@@ -44,20 +44,24 @@ impl Lexer {
             '!' => self
                 .map_if(|p| p == '=', TokenKind::NotEq)
                 .unwrap_or(TokenKind::Bang),
-            '<' => self
-                .map_if(|p| p == '=', || TokenKind::GreaterEq)
-                .unwrap_or(TokenKind::Greater),
-            '>' => self
-                .map_if(|p| p == '=', || TokenKind::LessEq)
-                .unwrap_or(TokenKind::Less),
+            '<' if self.peek() == Some('=') => {
+                self.cursor += 1;
+                TokenKind::LessEq
+            }
             '<' if self.peek() == Some('<') => {
                 self.cursor += 1;
                 TokenKind::RShift
+            }
+            '<' => TokenKind::Less,
+            '>' if self.peek() == Some('=') => {
+                self.cursor += 1;
+                TokenKind::GreaterEq
             }
             '>' if self.peek() == Some('>') => {
                 self.cursor += 1;
                 TokenKind::LShift
             }
+            '>' => TokenKind::Greater,
             '|' => self
                 .map_if(|c| c == '|', TokenKind::Or)
                 .unwrap_or(TokenKind::Sep),
