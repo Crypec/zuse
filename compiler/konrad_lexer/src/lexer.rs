@@ -1,29 +1,34 @@
 use crate::token::*;
 use konrad_ast::ast::{Lit, RangeKind};
 use konrad_err::diagnostic::*;
-use konrad_span::span::Span;
+use konrad_span::span::*;
 use std::path::PathBuf;
 
 type LexResult<T> = Result<T, Diagnostic>;
 
 #[derive(Debug)]
 pub struct Lexer {
+    pos: Position,
+    path: PathBuf,
     cursor: usize,
     buf: Vec<char>,
-    path: PathBuf,
 }
 
 impl Lexer {
     pub fn new<T: Into<String>, P: Into<PathBuf>>(buf: T, path: P) -> Self {
         Self {
-            cursor: 0,
-            buf: buf.into().chars().collect(),
+            pos: Position::default(),
             path: path.into(),
+            buf: buf.into().chars().collect(),
+            cursor: 0,
         }
     }
 
     pub fn scan_token(&mut self) -> LexResult<Token> {
         let start = self.cursor;
+
+        self.pos.reset_pos_for_new_token();
+
         let c = self.next_char()?;
         let kind = match c {
             '(' => TokenKind::LParen,
@@ -45,20 +50,20 @@ impl Lexer {
                 .map_if(|p| p == '=', TokenKind::NotEq)
                 .unwrap_or(TokenKind::Bang),
             '<' if self.peek() == Some('=') => {
-                self.cursor += 1;
+                self.inc_cursor(1);
                 TokenKind::LessEq
             }
             '<' if self.peek() == Some('<') => {
-                self.cursor += 1;
+                self.inc_cursor(1);
                 TokenKind::RShift
             }
             '<' => TokenKind::Less,
             '>' if self.peek() == Some('=') => {
-                self.cursor += 1;
+                self.inc_cursor(1);
                 TokenKind::GreaterEq
             }
             '>' if self.peek() == Some('>') => {
-                self.cursor += 1;
+                self.inc_cursor(1);
                 TokenKind::LShift
             }
             '>' => TokenKind::Greater,
@@ -99,11 +104,11 @@ impl Lexer {
             },
             '.' => match (self.peek_n(1), self.peek_n(2)) {
                 (Some('.'), Some('=')) => {
-                    self.cursor += 2;
+                    self.inc_cursor(2);
                     TokenKind::Range(RangeKind::Inclusive)
                 }
                 (Some('.'), _) => {
-                    self.cursor += 1;
+                    self.inc_cursor(1);
                     TokenKind::Range(RangeKind::Exclusive)
                 }
                 (_, _) => TokenKind::Dot,
@@ -131,7 +136,7 @@ impl Lexer {
             _ => self.lex_ident(start)?,
         };
 
-        let span = Span::new(start, self.cursor, self.path.clone());
+        let span = self.get_current_span();
         Ok(Token { kind, span })
     }
 
@@ -145,7 +150,7 @@ impl Lexer {
     where
         F: Fn(char) -> bool,
     {
-        self.cursor += prefix_len;
+        self.inc_cursor(prefix_len);
         self.advance_while(|c| matches(c) || c == '_')?;
 
         let num_start = start + prefix_len;
@@ -153,7 +158,7 @@ impl Lexer {
         match u128::from_str_radix(&num_str, radix) {
             Ok(n) => Ok(TokenKind::Lit(Lit::Num(n))),
             Err(e) => {
-                let sp = Span::new(start, self.cursor, self.path.clone());
+                let sp = self.get_current_span();
                 let diag = Diagnostic::builder()
                     .lvl(Level::Internal)
                     .msg(format!(
@@ -201,8 +206,13 @@ impl Lexer {
         Ok(())
     }
 
-    fn get_current_span(&self, start: usize) -> Span {
-        Span::new(start, self.cursor, self.path.clone())
+    fn get_current_span(&self) -> Span {
+        // subtract 1 to make the range inclusive
+        let end_col = self.pos.end_col.saturating_sub(1);
+
+        let start_lc = LineColumn::new(self.pos.start_line, self.pos.start_col);
+        let end_lc = LineColumn::new(self.pos.current_line, end_col);
+        Span::new(start_lc, end_lc, self.path.clone())
     }
 
     fn peek(&self) -> Option<char> {
@@ -216,11 +226,18 @@ impl Lexer {
 
     fn next_char(&mut self) -> LexResult<char> {
         let cursor = self.cursor;
-        self.cursor += 1;
-        match self.buf.get(cursor) {
-            Some(c) => Ok(*c),
+        self.inc_cursor(1);
+        match self.buf.get(cursor).copied() {
+            Some(c) => {
+                // FIXME(Simon): This is not going to hold up too well for different
+                // FIXME(Simon): operating systems and the unicode standart
+                if c == '\n' {
+                    self.pos.update_new_line();
+                }
+                Ok(c)
+            }
             None => {
-                let sp = self.get_current_span(cursor);
+                let sp = self.get_current_span();
                 let diag = Diagnostic::builder()
                     .lvl(Level::Error)
                     .msg("Unexepected End of File")
@@ -238,7 +255,7 @@ impl Lexer {
         match self.peek() {
             Some(c) => {
                 if p(c) {
-                    self.cursor += 1;
+                    self.inc_cursor(1);
                     Some(tk)
                 } else {
                     None
@@ -257,9 +274,33 @@ impl Lexer {
         );
         self.buf[start..end].iter().collect()
     }
+    fn inc_cursor(&mut self, n: usize) {
+        self.cursor += n;
+        self.pos.end_col += n;
+    }
 
     fn has_next(&self) -> bool {
         self.buf.len() > self.cursor
+    }
+}
+
+#[derive(Debug, Default)]
+struct Position {
+    start_line: usize,
+    current_line: usize,
+    start_col: usize,
+    end_col: usize,
+}
+
+impl Position {
+    fn reset_pos_for_new_token(&mut self) {
+        self.start_line = self.current_line;
+        self.start_col = self.end_col;
+    }
+
+    fn update_new_line(&mut self) {
+        self.current_line += 1;
+        self.end_col = 0;
     }
 }
 
