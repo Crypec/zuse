@@ -55,17 +55,29 @@ impl Span {
 
 impl Debug for Span {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        // NOTE(Simon): We use zero indexing for the line numbers so we need to add one
+        // NOTE(Simon): We use zero indexing for the line numbers so we need to add 1 to
         // NOTE(Simon): show the correct line number!
-        write!(
-            f,
-            "[{:?}] ----> [{} :: {}]..[{} :: {}]",
-            self.path,
-            self.start.line + 1,
-            self.start.col,
-            self.end.line + 1,
-            self.end.col
-        )
+        if self.end.line == self.start.line {
+            write!(
+                f,
+                "[{:?}] ----> [line: {}] :: [col: {}..={}]",
+                self.path,
+                self.start.line + 1,
+                self.start.col,
+                self.end.col
+            )
+        } else {
+            write!(
+                f,
+                "[{:?}] ----> [line: {}..={}] :: [col: {}..={}]",
+                self.path,
+                self.start.line + 1,
+                self.end.line + 1,
+                self.start.col,
+                self.end.col
+            )
+        }
+    }
 }
 
 impl Ord for LineColumn {
