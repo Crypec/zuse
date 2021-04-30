@@ -39,15 +39,12 @@ impl Span {
             self.path, other.path,
         );
 
-        let start_line = std::cmp::min(self.start.line, self.end.line);
-        let end_line = std::cmp::max(self.start.line, self.end.line);
-
-        let start_col = std::cmp::min(self.start.col, self.end.col);
-        let end_col = std::cmp::max(self.start.col, self.end.col);
+        let start = *std::cmp::min(&self.start, &other.start);
+        let end = *std::cmp::max(&self.end, &other.end);
 
         Self {
-            start: LineColumn::new(start_line, start_col),
-            end: LineColumn::new(end_line, end_col),
+            start,
+            end,
             path: self.path.clone(),
         }
     }
