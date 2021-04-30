@@ -95,3 +95,46 @@ impl PartialOrd for LineColumn {
         Some(self.cmp(&other))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use pretty_assertions::assert_eq;
+
+    const DUMMY_PATH: &str = "TEST_PATH_DOES_NOT_EXIST.zs";
+
+    #[test]
+    fn test_span_new() {
+        let actual = {
+            let lhs_lc = LineColumn::new(25, 42);
+            let rhs_lc = LineColumn::new(20, 10);
+            Span::new(lhs_lc, rhs_lc, DUMMY_PATH)
+        };
+        let expected = Span {
+            start: LineColumn { line: 20, col: 10 },
+            end: LineColumn { line: 25, col: 42 },
+            path: DUMMY_PATH.into(),
+        };
+        assert_eq!(actual, expected);
+    }
+    #[test]
+    fn test_span_merge() {
+        let lhs = {
+            let lhs_lc = LineColumn::new(25, 42);
+            let rhs_lc = LineColumn::new(20, 10);
+            Span::new(lhs_lc, rhs_lc, DUMMY_PATH)
+        };
+        let rhs = {
+            let lhs_lc = LineColumn::new(10, 0);
+            let rhs_lc = LineColumn::new(19, 0);
+            Span::new(lhs_lc, rhs_lc, DUMMY_PATH)
+        };
+        let actual = rhs.merge(&lhs);
+        let expected = Span {
+            start: LineColumn { line: 10, col: 0 },
+            end: LineColumn { line: 25, col: 42 },
+            path: DUMMY_PATH.into(),
+        };
+        assert_eq!(actual, expected);
+    }
+}

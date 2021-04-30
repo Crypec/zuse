@@ -50,6 +50,7 @@ name = "konrad"
 version = "0.1.0"
 dependencies = [
  "konrad_lexer",
+ "konrad_parser",
 ]
 
 [[package]]
@@ -92,6 +93,9 @@ dependencies = [
 [[package]]
 name = "konrad_span"
 version = "0.1.0"
+dependencies = [
+ "pretty_assertions",
+]
 
 [[package]]
 name = "memchr"
