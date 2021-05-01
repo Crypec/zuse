@@ -160,12 +160,11 @@ impl Lexer {
             Err(e) => {
                 let sp = self.get_current_span();
                 let diag = Diagnostic::builder()
-                    .lvl(Level::Internal)
+                    .lvl(Level::Error(sp))
                     .msg(format!(
                         "Failed to parse number literal with radix {}",
                         radix
                     ))
-                    .span(sp)
                     .note(&format!("{:?}", e))
                     .build();
                 Err(diag)
@@ -239,9 +238,8 @@ impl Lexer {
             None => {
                 let sp = self.get_current_span();
                 let diag = Diagnostic::builder()
-                    .lvl(Level::Error)
+                    .lvl(Level::Error(sp))
                     .msg("Unexepected End of File")
-                    .span(sp)
                     .build();
                 Err(diag)
             }

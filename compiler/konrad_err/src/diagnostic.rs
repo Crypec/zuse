@@ -6,7 +6,6 @@ use typed_builder::TypedBuilder;
 #[derive(Debug, TypedBuilder)]
 pub struct Diagnostic {
     pub lvl: Level,
-    pub span: Span,
 
     #[builder(setter(into))]
     pub msg: String,
@@ -22,16 +21,18 @@ pub struct Diagnostic {
 /// Represents the kind of diagnostic the compiler is supposed to emmit
 pub enum Level {
     /// Hard compile time errors
-    Error,
+    Error(Span),
     /// Soft compile time warnings. The compiler will still exit with sucessfully even if you emit
     /// a Warning.
-    Warning,
+    Warning(Span),
 
     /// A Note can be used to give extra information to the user.
-    Note,
+    Note(Span),
 
     /// Internal bugs inside the compiler. The end user is never supposed to see this.
-    Internal,
+    // NOTE(Simon): Because we also use diagnostics to represent internal errors we can't always
+    // NOTE(Simon): guarantee that we know the src location which lead to the internal bug
+    Internal(Option<Span>),
 }
 
 #[derive(Debug, TypedBuilder)]
