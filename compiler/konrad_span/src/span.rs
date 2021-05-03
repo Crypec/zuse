@@ -32,7 +32,7 @@ impl Span {
         Self { start, end, path }
     }
 
-    fn merge(&self, other: &Self) -> Self {
+    pub fn merge(&self, other: &Self) -> Self {
         debug_assert_eq!(
             self.path, other.path,
             "Paths must be equal: {:?} != {:?}",
