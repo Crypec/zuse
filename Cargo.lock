@@ -58,6 +58,8 @@ name = "konrad_ast"
 version = "0.1.0"
 dependencies = [
  "derivative",
+ "konrad_err",
+ "konrad_lexer",
  "konrad_span",
  "parse-display",
 ]
@@ -74,7 +76,6 @@ dependencies = [
 name = "konrad_lexer"
 version = "0.1.0"
 dependencies = [
- "konrad_ast",
  "konrad_err",
  "konrad_span",
  "parse-display",
@@ -88,6 +89,7 @@ dependencies = [
  "konrad_ast",
  "konrad_err",
  "konrad_lexer",
+ "konrad_span",
 ]
 
 [[package]]
