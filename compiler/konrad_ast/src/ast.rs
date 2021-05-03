@@ -1,6 +1,7 @@
 use derivative::*;
-use parse_display::Display;
+use std::convert::TryFrom;
 
+use konrad_err::diagnostic::*;
 use konrad_lexer::token::*;
 use konrad_span::span::Span;
 
@@ -156,4 +157,35 @@ pub struct Path {
     pub span: Span,
 }
 
+impl TryFrom<&Token> for BinOp {
+    type Error = Diagnostic;
+    fn try_from(t: &Token) -> Result<Self, Self::Error> {
+        match t.kind {
+            TokenKind::Plus => Ok(BinOp::Plus),
+            TokenKind::Minus => Ok(BinOp::Minus),
+            TokenKind::Star => Ok(BinOp::Multiply),
+            TokenKind::Slash => Ok(BinOp::Divide),
+            TokenKind::Mod => Ok(BinOp::Mod),
+            TokenKind::LShift => Ok(BinOp::LShift),
+            TokenKind::RShift => Ok(BinOp::RShift),
+            TokenKind::Ref => Ok(BinOp::BWAnd),
+            TokenKind::Sep => Ok(BinOp::BWOr),
+            TokenKind::Caret => Ok(BinOp::BWXor),
+            TokenKind::And => Ok(BinOp::And),
+            TokenKind::Or => Ok(BinOp::Or),
+            TokenKind::Xor => Ok(BinOp::Xor),
+
+            TokenKind::EqEq => Ok(BinOp::EqEq),
+            TokenKind::NotEq => Ok(BinOp::NotEq),
+            TokenKind::Greater => Ok(BinOp::Greater),
+            TokenKind::GreaterEq => Ok(BinOp::GreaterEq),
+            TokenKind::Less => Ok(BinOp::Less),
+            TokenKind::LessEq => Ok(BinOp::LessEq),
+            _ => {
+                let sp = Some(t.span.clone());
+                let diag = Diagnostic::builder().lvl(Level::Internal(sp)).msg("Failed to covert token: {} to binary operator").note("This is most likely an issue in the parser, make sure you only try to convert a token if you can guarantee the conversion never fails.").build();
+                Err(diag)
+            }
+        }
+    }
 }
