@@ -103,7 +103,6 @@ pub enum TokenKind {
     #[display("*")]
     Star,
 
-    // inclusive ranges are handled by the parser
     #[display("{0}")]
     Range(RangeKind),
 
@@ -112,8 +111,12 @@ pub enum TokenKind {
 
     #[display("&&")]
     And,
+
     #[display("||")]
     Or,
+
+    #[display("^^")]
+    Xor,
 
     #[display("^")]
     Caret,

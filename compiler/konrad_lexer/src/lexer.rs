@@ -1,5 +1,4 @@
 use crate::token::*;
-use konrad_ast::ast::{Lit, RangeKind};
 use konrad_err::diagnostic::*;
 use konrad_span::span::*;
 use std::path::PathBuf;
@@ -43,9 +42,11 @@ impl Lexer {
             '_' => TokenKind::WildCard,
             '+' => TokenKind::Plus,
             '%' => TokenKind::Mod,
-            '^' => TokenKind::Caret,
             '*' => TokenKind::Star,
             '#' => TokenKind::Hash,
+            '^' => self
+                .map_if(|p| p == '^', TokenKind::Xor)
+                .unwrap_or(TokenKind::Caret),
             '!' => self
                 .map_if(|p| p == '=', TokenKind::NotEq)
                 .unwrap_or(TokenKind::Bang),

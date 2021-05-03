@@ -328,6 +328,28 @@ fn lex_fn_definition() {
     );
 }
 
+#[test]
+fn lex_expr_operators() {
+    assert_tokens_eq!(
+        "+ - * / && & || | ^ ^^ % >> << < >",
+        TokenKind::Plus,
+        TokenKind::Minus,
+        TokenKind::Star,
+        TokenKind::Slash,
+        TokenKind::And,
+        TokenKind::Ref,
+        TokenKind::Or,
+        TokenKind::Sep,
+        TokenKind::Caret,
+        TokenKind::Xor,
+        TokenKind::Mod,
+        TokenKind::RShift,
+        TokenKind::LShift,
+        TokenKind::Less,
+        TokenKind::Greater,
+    );
+}
+
 fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<TokenKind> {
     fn should_be_included(t: &TokenKind) -> bool {
         !(matches!(t, TokenKind::Nl | TokenKind::WhiteSpace))
