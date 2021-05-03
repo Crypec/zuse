@@ -6,8 +6,8 @@ use konrad_span::span::Span;
 
 #[derive(Debug)]
 pub struct Expr {
-    kind: ExprKind,
-    span: Span,
+    pub kind: ExprKind,
+    pub span: Span,
 }
 
 #[derive(Derivative)]
@@ -20,15 +20,6 @@ pub enum ExprKind {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
         op: BinOp,
-    },
-
-    /// just like a normal binary expression but only used for logical expressions
-    /// example: a      &&    b
-    ///          ^-rhs  ^-op  ^-lhs
-    Cmp {
-        lhs: Box<Expr>,
-        rhs: Box<Expr>,
-        op: CmpOp,
     },
 
     /// one sided expression
@@ -126,13 +117,15 @@ pub enum BinOp {
     Mod,
     LShift,
     RShift,
+
     And,
     Or,
     Xor,
-}
 
-#[derive(Debug)]
-pub enum CmpOp {
+    BWAnd,
+    BWOr,
+    BWXor,
+
     EqEq,
     NotEq,
     Greater,
