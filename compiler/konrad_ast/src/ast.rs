@@ -1,6 +1,7 @@
 use derivative::*;
 use parse_display::Display;
 
+use konrad_lexer::token::*;
 use konrad_span::span::Span;
 
 #[derive(Debug)]
@@ -162,21 +163,4 @@ pub struct Path {
     pub span: Span,
 }
 
-#[derive(PartialEq, Debug, Clone, Display)]
-pub enum Lit {
-    // NOTE(Simon): we store all numbers as positives. The sign get's encoded into the AST
-    #[display("{}")]
-    Num(u128),
-    #[display("{}")]
-    Float(f64),
-    #[display("{}")]
-    Text(String),
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
-pub enum RangeKind {
-    #[display("..=")]
-    Inclusive,
-    #[display("..")]
-    Exclusive,
 }

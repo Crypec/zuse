@@ -1,4 +1,3 @@
-use konrad_ast::ast::{Lit, RangeKind};
 use konrad_span::span::Span;
 use parse_display::Display;
 
@@ -203,6 +202,25 @@ pub enum Keyword {
 
     #[display("type")]
     Type,
+}
+
+#[derive(PartialEq, Debug, Clone, Display)]
+pub enum Lit {
+    // NOTE(Simon): we store all numbers as positives. The sign get's encoded into the AST
+    #[display("{}")]
+    Num(u128),
+    #[display("{}")]
+    Float(f64),
+    #[display("{}")]
+    Text(String),
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
+pub enum RangeKind {
+    #[display("..=")]
+    Inclusive,
+    #[display("..")]
+    Exclusive,
 }
 
 impl std::str::FromStr for Keyword {

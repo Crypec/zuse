@@ -1,4 +1,3 @@
-use konrad_ast::ast::{Lit, RangeKind};
 use konrad_err::diagnostic::*;
 use konrad_lexer::lexer::Lexer;
 use konrad_lexer::token::*;
