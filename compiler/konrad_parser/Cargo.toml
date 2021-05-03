@@ -1,0 +1,13 @@
+[package]
+name = "konrad_parser"
+version = "0.1.0"
+authors = ["Simon Kunz <simon.kunz21@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+konrad_ast	 = { path = "../konrad_ast"}
+konrad_err   = { path = "../konrad_err" }
+konrad_span  = { path = "../konrad_span" }
+konrad_lexer = { path = "../konrad_lexer" }
