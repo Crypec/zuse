@@ -56,7 +56,7 @@ impl Lexer {
             }
             '<' if self.peek() == Some('<') => {
                 self.inc_cursor(1);
-                TokenKind::RShift
+                TokenKind::LShift
             }
             '<' => TokenKind::Less,
             '>' if self.peek() == Some('=') => {
@@ -65,14 +65,14 @@ impl Lexer {
             }
             '>' if self.peek() == Some('>') => {
                 self.inc_cursor(1);
-                TokenKind::LShift
+                TokenKind::RShift
             }
             '>' => TokenKind::Greater,
             '|' => self
                 .map_if(|c| c == '|', TokenKind::Or)
                 .unwrap_or(TokenKind::Sep),
             '&' => self
-                .map_if(|c| c == '|', TokenKind::And)
+                .map_if(|c| c == '&', TokenKind::And)
                 .unwrap_or(TokenKind::Ref),
             '-' => self
                 .map_if(|p| p == '>', TokenKind::ThinArrow)
