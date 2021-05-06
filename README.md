@@ -1,9 +1,12 @@
 # Zuse
 
-<img align="left" src="resources/zuse_logo.svg" alt="drawing" width="120"/>
+<img align="left" src="resources/zuse_logo.svg" alt="original logo of the Zuse KG" width="200"/>
 Zuse is a new programming language which aims make writing lightning fast code
 as easy as possible by providing extensible meta programming mechanisms to easily
 verify programm correctness.
+
+<br><br/>
+<br><br/>
 <br><br/>
 
 ## Getting started
@@ -51,6 +54,16 @@ main :: () {
 }
 ```
 
+```haskell
+-- // The function `foo` is going to run at compile time.
+-- // It is not limited in any way compared to runtime code execution.
+#run
+foo :: () {
+	msg := "Hello from the compile time world!";
+	println!("{}", msg);
+}
+```
+
 
 ### Custom range types
 ```haskell
@@ -71,7 +84,6 @@ for _ := 0..300 {
 ```
 
 ```haskell
-
 -- // A max age of 140 years seems to be a pretty good estimate.
 -- // At least according to wikipedia: https://en.wikipedia.org/wiki/List_of_the_verified_oldest_people
 -- // So if a user of your software claims to be Elvis Presley and 200 years old something is probably not right :D
@@ -94,7 +106,7 @@ Option :: enum($T) {
 	None,
 }
 
--- // Enum iference through the dot operator allows for clear syntax without too much visual noise
+-- // Enum inference through the dot operator allows for clear syntax without too much visual noise
 foo := .Some(42);
 
 -- // These cases are equivalent but discouraged.
