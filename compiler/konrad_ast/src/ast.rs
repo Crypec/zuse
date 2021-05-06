@@ -157,33 +157,67 @@ pub struct Path {
     pub span: Span,
 }
 
-impl TryFrom<&Token> for BinOp {
-    type Error = Diagnostic;
-    fn try_from(t: &Token) -> Result<Self, Self::Error> {
-        match t.kind {
-            TokenKind::Plus => Ok(BinOp::Plus),
-            TokenKind::Minus => Ok(BinOp::Minus),
-            TokenKind::Star => Ok(BinOp::Multiply),
-            TokenKind::Slash => Ok(BinOp::Divide),
-            TokenKind::Mod => Ok(BinOp::Mod),
-            TokenKind::LShift => Ok(BinOp::LShift),
-            TokenKind::RShift => Ok(BinOp::RShift),
-            TokenKind::Ref => Ok(BinOp::BWAnd),
-            TokenKind::Sep => Ok(BinOp::BWOr),
-            TokenKind::Caret => Ok(BinOp::BWXor),
-            TokenKind::And => Ok(BinOp::And),
-            TokenKind::Or => Ok(BinOp::Or),
-            TokenKind::Xor => Ok(BinOp::Xor),
 
-            TokenKind::EqEq => Ok(BinOp::EqEq),
-            TokenKind::NotEq => Ok(BinOp::NotEq),
-            TokenKind::Greater => Ok(BinOp::Greater),
-            TokenKind::GreaterEq => Ok(BinOp::GreaterEq),
-            TokenKind::Less => Ok(BinOp::Less),
-            TokenKind::LessEq => Ok(BinOp::LessEq),
+impl TryFrom<Token> for BinOp {
+    type Error = Diagnostic;
+    fn try_from(t: Token) -> Result<Self, Self::Error> {
+        match t.kind {
+            TokenKind::Plus => Ok(Self::Plus),
+            TokenKind::Minus => Ok(Self::Minus),
+            TokenKind::Star => Ok(Self::Multiply),
+            TokenKind::Slash => Ok(Self::Divide),
+            TokenKind::Mod => Ok(Self::Mod),
+            TokenKind::LShift => Ok(Self::LShift),
+            TokenKind::RShift => Ok(Self::RShift),
+            TokenKind::Ref => Ok(Self::BWAnd),
+            TokenKind::Sep => Ok(Self::BWOr),
+            TokenKind::Caret => Ok(Self::BWXor),
+            TokenKind::And => Ok(Self::And),
+            TokenKind::Or => Ok(Self::Or),
+            TokenKind::Xor => Ok(Self::Xor),
+
+            TokenKind::EqEq => Ok(Self::EqEq),
+            TokenKind::NotEq => Ok(Self::NotEq),
+            TokenKind::Greater => Ok(Self::Greater),
+            TokenKind::GreaterEq => Ok(Self::GreaterEq),
+            TokenKind::Less => Ok(Self::Less),
+            TokenKind::LessEq => Ok(Self::LessEq),
+            _ => {
+                let msg = format!("Failed to covert token: {:?} to binary operator", t);
+                let sp = Some(t.span.clone());
+                let diag = Diagnostic::builder()
+                    .lvl(Level::Internal(sp))
+                    .msg(msg)
+                    .note(
+                        "This is most likely an issue in the parser, make sure you only try to
+                        convert a token if you can guarantee the conversion never fails.",
+                    )
+                    .build();
+                Err(diag)
+            }
+        }
+    }
+}
+
+impl TryFrom<Token> for UnaryOp {
+    type Error = Diagnostic;
+    fn try_from(t: Token) -> Result<Self, Self::Error> {
+        match t.kind {
+            TokenKind::Bang => Ok(Self::Not),
+            TokenKind::Minus => Ok(Self::Minus),
+            TokenKind::Star => Ok(Self::Deref),
+            TokenKind::Ref => Ok(Self::Ref),
             _ => {
                 let sp = Some(t.span.clone());
-                let diag = Diagnostic::builder().lvl(Level::Internal(sp)).msg("Failed to covert token: {} to binary operator").note("This is most likely an issue in the parser, make sure you only try to convert a token if you can guarantee the conversion never fails.").build();
+                let msg = format!("Failed to covert token: {:?} to unary operator", t);
+                let diag = Diagnostic::builder()
+                    .lvl(Level::Internal(sp))
+                    .msg(msg)
+                    .note(
+                        "This is most likely an issue in the parser, make sure you only try to
+                        convert a token if you can guarantee the conversion never fails.",
+                    )
+                    .build();
                 Err(diag)
             }
         }

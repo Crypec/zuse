@@ -9,6 +9,7 @@ edition = "2018"
 [dependencies]
 parse-display = "0.4.1"
 derivative = "2.2.0"
+
 konrad_span = { path = "../konrad_span" }
 konrad_err = {path = "../konrad_err"}
 konrad_lexer = { path = "../konrad_lexer"}
