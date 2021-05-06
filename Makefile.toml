@@ -1,0 +1,55 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+ZUSE_ROOT_DIR = "${HOME}/.zuse"
+ZUSE_BIN_DIR = "${ZUSE_ROOT_DIR}/bin"
+
+[tasks.add-to-bashrc]
+description = "add zuse compiler to path"
+workspace = false
+script = '''
+echo "export ZUSE_BIN_DIR=${ZUSE_BIN_DIR}" >> ${HOME}/.bashrc
+echo 'export PATH=$ZUSE_BIN_DIR:$PATH' >> ${HOME}/.bashrc
+'''
+
+[tasks.add-to-fish-config]
+description = "add zuse compiler to path"
+workspace = false
+script = '''
+echo "set -gx ZUSE_BIN_DIR ${ZUSE_BIN_DIR}" >> ${HOME}/.config/fish/config.fish
+echo 'set -gx PATH $ZUSE_BIN_DIR $PATH' >> ${HOME}/.config/fish/config.fish
+'''
+
+[tasks.build]
+description = "builds a reelase version of the compiler"
+workspace = false
+command = "cargo" 
+args = ["build", "-p", "konrad", "--release"]
+
+[tasks.create-zuse-root-folder]
+description = "create a habitat for tools of the zuse language to live in"
+workspace = false
+command = "mkdir"
+args = ["-p", "${ZUSE_ROOT_DIR}"]
+
+[tasks.create-bin-folder-in-zuse-root]
+description = "create a habitat for the zuse compiler"
+workspace = false
+command = "mkdir"
+args = ["-p", "${ZUSE_BIN_DIR}"]
+dependencies = ["create-zuse-root-folder"]
+
+[tasks.remove-old-compiler]
+workspace = false
+command = "rm"
+args = ["-rf", "${ZUSE_BIN_DIR}/zuse"]
+
+[tasks.install]
+workspace = false
+command = "mv"
+args = ["--force", "${CARGO_MAKE_WORKSPACE_WORKING_DIRECTORY}/target/release/konrad", "${ZUSE_BIN_DIR}/zuse"]
+dependencies = ["build", "create-bin-folder-in-zuse-root", "remove-old-compiler"]
+
+[tasks.uninstall]
+workspace = false
+command = "rm"
+args = ["-rf", "${ZUSE_ROOT_DIR}"]
