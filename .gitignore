@@ -1,3 +1,4 @@
 
 target/
 llvm_ir_test/
+test.zs
