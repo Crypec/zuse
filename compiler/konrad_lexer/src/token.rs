@@ -1,13 +1,14 @@
+use float_cmp::*;
 use konrad_span::span::Span;
 use parse_display::Display;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Token {
     pub kind: TokenKind,
     pub span: Span,
 }
 
-#[derive(Debug, PartialEq, Clone, Display)]
+#[derive(Debug, PartialEq, Eq, Clone, Display)]
 pub enum TokenKind {
     #[display("{0}")]
     Ident(String),
@@ -153,7 +154,7 @@ pub enum TokenKind {
 }
 
 /// keywords used internally by the language
-#[derive(PartialEq, Debug, Eq, Clone, Display)]
+#[derive(PartialEq, Eq, Debug, Clone, Display)]
 pub enum Keyword {
     #[display("struct")]
     Struct,
@@ -207,7 +208,7 @@ pub enum Keyword {
     Type,
 }
 
-#[derive(PartialEq, Debug, Clone, Display)]
+#[derive(Debug, Clone, Display)]
 pub enum Lit {
     // NOTE(Simon): we store all numbers as positives. The sign get's encoded into the AST
     #[display("{}")]
@@ -218,12 +219,39 @@ pub enum Lit {
     Text(String),
 }
 
+impl PartialEq for Lit {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Num(a), Self::Num(b)) => a == b,
+            (Self::Text(a), Self::Text(b)) => a == b,
+            // NOTE(Simon): I don't know if the parameters for approx_eq are correct
+            // NOTE(Simon): I just pulled them directly from their example
+            // NOTE(Simon): If we ever run into an issue with float comparisons we might have to
+            // NOTE(Simon): look at this again!
+            //              - Simon Kunz 05.05.2021
+            (Self::Float(a), Self::Float(b)) => a.approx_eq(*b, (0.0, 2)),
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Lit {}
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Display)]
 pub enum RangeKind {
     #[display("..=")]
     Inclusive,
     #[display("..")]
     Exclusive,
+}
+
+impl TokenKind {
+    pub const fn is_whitespace(&self) -> bool {
+        match self {
+            Self::WhiteSpace | Self::Nl => true,
+            _ => false,
+        }
+    }
 }
 
 impl std::str::FromStr for Keyword {

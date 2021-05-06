@@ -9,6 +9,7 @@ type LexResult<T> = Result<T, Diagnostic>;
 pub struct Lexer {
     pos: Position,
     path: PathBuf,
+
     cursor: usize,
     buf: Vec<char>,
 }
@@ -18,6 +19,7 @@ impl Lexer {
         Self {
             pos: Position::default(),
             path: path.into(),
+
             buf: buf.into().chars().collect(),
             cursor: 0,
         }

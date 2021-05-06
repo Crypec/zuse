@@ -1,5 +1,5 @@
 use konrad_err::diagnostic::*;
-use konrad_lexer::lexer::Lexer;
+use konrad_lexer::lexer::*;
 use konrad_lexer::token::*;
 use konrad_span::span::*;
 use pretty_assertions::assert_eq;
@@ -337,29 +337,27 @@ fn test_span_trait_decl() {
 }
 
 fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<Token> {
-    fn should_be_included(t: &Token) -> bool {
-        !(matches!(t.kind, TokenKind::Nl | TokenKind::WhiteSpace))
+    #[derive(Debug)]
+    struct ErrDump<T> {
+        tokens: Vec<T>,
+        errs: Vec<Diagnostic>,
     }
-    let (spans, errs): (
+
+    let (tokens, errs): (
         Vec<Result<Token, Diagnostic>>,
         Vec<Result<Token, Diagnostic>>,
     ) = Lexer::new(src, TEST_FILE_PATH).partition(Result::is_ok);
-    let tokens: Vec<_> = spans
+    let tokens: Vec<_> = tokens
         .into_iter()
         .map(Result::unwrap)
-        .filter(should_be_included)
+        .filter(|t| !t.kind.is_whitespace())
         .collect();
     let errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
     if !errs.is_empty() {
-        #[derive(Debug)]
-        struct LexError {
-            tokens: Vec<Token>,
-            errs: Vec<Diagnostic>,
-        }
         assert!(
             errs.is_empty(),
             "Encountered errors during test_spaning: {:#?}",
-            LexError { tokens, errs }
+            ErrDump { tokens, errs }
         );
     }
     tokens

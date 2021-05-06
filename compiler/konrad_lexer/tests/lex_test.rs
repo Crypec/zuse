@@ -1,5 +1,5 @@
 use konrad_err::diagnostic::*;
-use konrad_lexer::lexer::Lexer;
+use konrad_lexer::lexer::*;
 use konrad_lexer::token::*;
 use pretty_assertions::assert_eq;
 
@@ -351,10 +351,6 @@ fn lex_expr_operators() {
 }
 
 fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<TokenKind> {
-    fn should_be_included(t: &TokenKind) -> bool {
-        !(matches!(t, TokenKind::Nl | TokenKind::WhiteSpace))
-    }
-
     let (tokens, errs): (
         Vec<Result<Token, Diagnostic>>,
         Vec<Result<Token, Diagnostic>>,
@@ -362,8 +358,8 @@ fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<TokenKind> {
     let tokens: Vec<_> = tokens
         .into_iter()
         .map(Result::unwrap)
+        .filter(|t| !t.kind.is_whitespace())
         .map(|t| t.kind)
-        .filter(should_be_included)
         .collect();
     let errs: Vec<_> = errs.into_iter().map(Result::unwrap_err).collect();
     if !errs.is_empty() {
