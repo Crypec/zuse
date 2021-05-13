@@ -5,7 +5,7 @@ use konrad_err::diagnostic::*;
 use konrad_lexer::token::*;
 use konrad_span::span::Span;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Decl {
     pub kind: DeclKind,
     pub span: Span,
@@ -16,12 +16,13 @@ pub enum DeclKind {
     Const { name: Ident, value: Expr },
 }
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
 }
 
-#[derive(Derivative)]
+#[derive(Derivative, PartialEq, Eq)]
 #[derivative(Debug)]
 pub enum ExprKind {
     /// normal binary expression, only used for numeric expressions
@@ -119,7 +120,7 @@ pub enum ExprKind {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum BinOp {
     Plus,
     Minus,
@@ -145,7 +146,7 @@ pub enum BinOp {
     LessEq,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum UnaryOp {
     Ref,
     Deref,
@@ -153,7 +154,7 @@ pub enum UnaryOp {
     Not,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Ident {
     pub data: String,
     pub span: Span,
@@ -161,7 +162,7 @@ pub struct Ident {
 
 pub type PathSegment = Ident;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Path {
     pub segments: Vec<PathSegment>,
     pub span: Span,
