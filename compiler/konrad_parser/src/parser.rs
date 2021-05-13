@@ -42,6 +42,28 @@ impl Parser {
 
     fn parse_expr(&mut self) -> PResult<Expr> {
         todo!()
+    fn parse_decl(&mut self) -> PResult<Decl> {
+        let name = self.parse_ident("expected name of top level declaration")?;
+        self.eat(
+            TokenKind::ColCol,
+            "expected `::` between name of declaration and type",
+        )?;
+        match self.peek_kind() {
+            _ => self.parse_const_decl(name),
+        }
+    }
+
+    fn parse_const_decl(&mut self, name: Ident) -> PResult<Decl> {
+        let value = self.parse_expr()?;
+        let span = self
+            .eat(TokenKind::Semi, "expected `;` after const declaration")?
+            .span
+            .merge(&name.span);
+        Ok(Decl {
+            kind: DeclKind::Const { name, value },
+            span,
+        })
+    }
     }
 
     __parse_bin_expr_impl!(parse_or, parse_and, TokenKind::Or);

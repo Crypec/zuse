@@ -6,6 +6,16 @@ use konrad_lexer::token::*;
 use konrad_span::span::Span;
 
 #[derive(Debug)]
+pub struct Decl {
+    pub kind: DeclKind,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DeclKind {
+    Const { name: Ident, value: Expr },
+}
+
 pub struct Expr {
     pub kind: ExprKind,
     pub span: Span,
