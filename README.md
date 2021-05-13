@@ -17,7 +17,7 @@ Make sure you have [Rust](https://www.rust-lang.org/) and [cargo-make](https://g
 installed as this version of the compiler is written in Rust.
 Then you can simple execute the following command.
 
-```console
+```bash
 cargo make install
 ```
 
@@ -26,12 +26,12 @@ are using [fish](https://fishshell.com/) or [bash](https://www.gnu.org/software/
 you can simply execute one of the following commands.
 
 #### If you are using bash
-```console
+```bash
 cargo make add-to-bashrc
 ```
 
 #### If you are using fish
-```console
+```bash
 cargo make add-to-fish-config
 ```
 
