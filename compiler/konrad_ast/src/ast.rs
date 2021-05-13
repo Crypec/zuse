@@ -46,8 +46,8 @@ pub enum ExprKind {
     /// example: Person {name: "Torben"}
     ///          ^-name  ^^^^^^^^^^^^^^- member with name and init expr
     Struct {
-        name: Ident,
-        members: Vec<(String, Expr)>,
+        path: Path,
+        fields: Vec<(Ident, Expr)>,
     },
 
     /// a tuple expression is just a collection of other expressions

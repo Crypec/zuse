@@ -90,6 +90,52 @@ impl Parser {
     }
 
     fn eat(&mut self, expected: TokenKind, note: &str) -> PResult<&Token> {
+    fn parse_struct_lit(&mut self, path: Path) -> PResult<Expr> {
+        self.eat(
+            TokenKind::LBrace,
+            "expected a `{` to start a struct literal",
+        )?;
+        let mut fields = vec![];
+        while self.peek_kind() != Some(TokenKind::RBrace) {
+            let name = self.parse_ident("expected name of struct field to initialize")?;
+            self.eat(
+                TokenKind::Col,
+                "the name of a struct field and the his value is seperated by a `:`",
+            )?;
+            let init = self.parse_expr()?;
+            fields.push((name, init));
+        }
+        let span = self
+            .eat(
+                TokenKind::RBrace,
+                "expected a closing `}` after a struct literal",
+            )?
+            .span
+            .merge(&path.first().unwrap().span);
+        Ok(Expr {
+            kind: ExprKind::Struct { path, fields },
+            span,
+        })
+    }
+
+    fn parse_path(&mut self) -> PResult<Path> {
+        let first = self.parse_ident("expected path segemnt")?;
+        let mut segments = vec![first];
+
+        while let Some(TokenKind::ColCol) = self.peek_kind() {
+            self.next_t()?;
+            let segment = self.parse_ident("expected path segment")?;
+            segments.push(segment);
+        }
+
+        // This can never fail because we bail out on the first path_ident
+        // So there is always going to be eat least one segment in the vector
+        let first = &segments.first().unwrap().span;
+        let last = &segments.last().unwrap().span;
+        let span = first.merge(last);
+        Ok(Path { segments, span })
+    }
+
         match self.next_t() {
             Ok(t) if t.kind == expected => Ok(t),
             Ok(t) => {
