@@ -185,6 +185,19 @@ pub struct Path {
     pub span: Span,
 }
 
+impl Path {
+    pub fn len(&self) -> usize {
+        self.segments.len()
+    }
+
+    pub fn first(&self) -> Option<&PathSegment> {
+        self.segments.first()
+    }
+
+    pub fn last(&self) -> Option<&PathSegment> {
+        self.segments.last()
+    }
+}
 
 impl TryFrom<Token> for BinOp {
     type Error = Diagnostic;
