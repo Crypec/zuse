@@ -62,6 +62,14 @@ pub enum ExprKind {
     #[derivative(Debug = "transparent")]
     Path(Path),
 
+    #[derivative(Debug = "transparent")]
+    /// Enum variant where the specific type has to be infered
+    /// example: .Some(42)
+    ///           ^^^^-variant
+    /// should desugar to:
+    ///          Option::Some(42)
+    InferedEnum(Ident),
+
     Var(Ident),
 
     /// used to represent all sorts of index expressions
@@ -72,12 +80,8 @@ pub enum ExprKind {
         index: Box<Expr>,
     },
 
-    /// array literals are used to initialize arrays with values
-    /// example: [1, 2, 3, 4, 5]
-    ///           ^-create new array with values from 1 to including 5
-
     #[derivative(Debug = "transparent")]
-    Array(Vec<Expr>),
+    Array(ArrayInit),
 
     /// a range pattern
     /// example: 0   ..   10
@@ -155,6 +159,19 @@ pub enum UnaryOp {
 }
 
 #[derive(Debug, PartialEq, Eq)]
+pub enum ArrayInit {
+    /// list initializers are used to initialize arrays with values
+    /// example: [1, 2, 3, 4, 5]
+    ///           ^-create new array with values from 1 to including 5
+    List(Vec<Expr>),
+
+    /// fill initializers create a new array of a certain len by repeating an expression
+    /// example: [0; 10]
+    ///           ^-creates an array of len 10 filled with 0
+    Filler { val: Box<Expr>, len: Box<Expr> },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Ident {
     pub data: String,
     pub span: Span,
