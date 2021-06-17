@@ -124,7 +124,7 @@ impl<'s> Lexer<'s> {
                     self.inc_cursor(1);
                     TokenKind::Range(RangeKind::Exclusive)
                 }
-                (_, _) => TokenKind::Dot,
+                (..) => TokenKind::Dot,
             },
             // TODO(Simon): handle multiline comments
             '/' if self.peek() == Some('/') => {
@@ -132,6 +132,32 @@ impl<'s> Lexer<'s> {
                 self.advance_while(|c| c != '\n')?;
                 let comment = self.sub_string(start, self.cursor);
                 TokenKind::SLComment(comment)
+            }
+            '/' if self.peek() == Some('*') => {
+                // skip start of comment
+                self.next_char()?;
+                self.next_char()?;
+
+                let opening_span = self.get_current_span();
+
+                loop {
+                    match (self.peek_n(1), self.peek_n(2)) {
+                        (Some('*'), Some('/')) => {
+                            // skip end of comment
+                            self.next_char()?;
+                            self.next_char()?;
+                            break;
+                        }
+                        (Some(_), Some(_)) => self.next_char()?,
+                        _ => {
+                            self.sess
+                                .span_err("Unclosed multiline comment", opening_span);
+                            return None;
+                        }
+                    };
+                }
+                let comment = self.sub_string(start, self.cursor);
+                TokenKind::MLComment(comment)
             }
             '/' => TokenKind::Slash,
             '"' => self.lex_string(start)?,
@@ -238,27 +264,14 @@ impl<'s> Lexer<'s> {
         self.buf.get(self.cursor + n).copied()
     }
 
-    fn next_char(&mut self) -> LexResult<char> {
+    fn next_char(&mut self) -> Option<char> {
         let cursor = self.cursor;
         self.inc_cursor(1);
-        match self.buf.get(cursor).copied() {
-            Some(c) => {
-                // FIXME(Simon): This is not going to hold up too well for different
-                // FIXME(Simon): operating systems and the unicode standart
-                if c == '\n' {
-                    self.pos.update_new_line();
-                }
-                Ok(c)
-            }
-            None => {
-                let sp = self.get_current_span();
-                let diag = Diagnostic::builder()
-                    .lvl(Level::Error(sp))
-                    .msg("Unexepected End of File")
-                    .build();
-                Err(diag)
-            }
+        let next_char = self.buf.get(cursor).copied();
+        if let Some('\n') = next_char {
+            self.pos.update_new_line();
         }
+        next_char
     }
 
     fn map_if<F>(&mut self, p: F, tk: TokenKind) -> Option<TokenKind>

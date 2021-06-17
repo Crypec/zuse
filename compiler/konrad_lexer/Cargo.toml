@@ -13,5 +13,6 @@ pretty_assertions = "0.7.2"
 parse-display = "0.4.1"
 float-cmp = "0.8.0"
 
-konrad_span = {path = "../konrad_span"}
-konrad_err = {path = "../konrad_err"}
+konrad_span = { path = "../konrad_span" }
+konrad_err = { path = "../konrad_err" }
+konrad_session = { path = "../konrad_session" }

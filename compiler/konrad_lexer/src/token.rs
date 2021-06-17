@@ -201,9 +201,6 @@ pub enum Keyword {
     #[display("else")]
     Else,
 
-    #[display("use")]
-    Use,
-
     #[display("type")]
     Type,
 }
@@ -247,10 +244,10 @@ pub enum RangeKind {
 
 impl TokenKind {
     pub const fn is_whitespace(&self) -> bool {
-        match self {
-            Self::WhiteSpace | Self::Nl => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Self::WhiteSpace | Self::Nl | Self::SLComment(_) | Self::MLComment(_)
+        )
     }
 }
 
@@ -272,7 +269,6 @@ impl std::str::FromStr for Keyword {
             "else" => Ok(Self::Else),
             "break" => Ok(Self::Break),
             "continue" => Ok(Self::Continue),
-            "use" => Ok(Self::Use),
             "type" => Ok(Self::Type),
             "match" => Ok(Self::Match),
             "trait" => Ok(Self::Trait),
