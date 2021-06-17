@@ -1,0 +1,18 @@
+[package]
+name = "konrad"
+version = "0.1.0"
+authors = ["Simon Kunz <simon.kunz21@gmail.com>"]
+edition = "2018"
+license-file = "LICENSE"
+readme = "README.md"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+konrad_lexer = { path = "../konrad_lexer" }
+konrad_parser = { path = "../konrad_parser" }
+konrad_err = { path = "../konrad_err" }
+konrad_session = { path = "../konrad_session" }
+
+colored = "2.0.0"
+glob = "0.3.0"
