@@ -1,9 +1,30 @@
 use derivative::*;
 use std::convert::TryFrom;
+use std::path::PathBuf;
 
 use konrad_err::diagnostic::*;
 use konrad_lexer::token::*;
 use konrad_span::span::Span;
+
+#[derive(Debug)]
+pub struct Programm {
+    pub files: Vec<FileNode>,
+}
+
+#[derive(Debug)]
+pub struct FileNode {
+    pub path: PathBuf,
+    pub decls: Vec<Decl>,
+}
+
+impl FileNode {
+    pub const fn new(path: PathBuf) -> Self {
+        Self {
+            path,
+            decls: vec![],
+        }
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Decl {
@@ -13,7 +34,198 @@ pub struct Decl {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum DeclKind {
-    Const { name: Ident, value: Expr },
+    Directive(Directive),
+    Enum {
+        name: Ident,
+        variants: Vec<EnumVariant>,
+    },
+    Struct {
+        name: Ident,
+        members: Vec<StructMember>,
+    },
+    Const {
+        name: Ident,
+        value: Expr,
+    },
+    Fn {
+        sig: FnSig,
+        body: Box<Block>,
+    },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct FnSig {
+    pub name: Ident,
+    pub args: Vec<FnArgument>,
+    pub ret_ty: Ty,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct FnArgument {
+    pub name: Ident,
+    pub ty: Ty,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Block {
+    pub stmts: Vec<Stmt>,
+    pub value: Option<Expr>,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct EnumVariant {
+    pub kind: VariantKind,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Stmt {
+    pub kind: StmtKind,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum StmtKind {
+    Expr(Expr),
+    For {
+        var: Pat,
+        init: Expr,
+    },
+    While {
+        cond: Expr,
+        body: Block,
+    },
+    WhileAssign {
+        pat: Pat,
+        cond: Expr,
+        body: Block,
+    },
+    Loop {
+        body: Block,
+    },
+    If(IfStmt),
+    ConstIf(IfStmt),
+    IfAssign {
+        pat: Pat,
+        cond: Expr,
+        else_branches: Vec<ElseAssignBranch>,
+        final_branch: Option<Block>,
+    },
+    Break {
+        label: Option<Ident>,
+    },
+    Continue {
+        label: Option<Ident>,
+    },
+    Return(Option<Expr>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ElseAssignBranch {
+    pub pat: Pat,
+    pub cond: Expr,
+    pub body: Block,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ElseBranch {
+    pub cond: Expr,
+    pub body: Block,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct IfStmt {
+    pub cond: Expr,
+    pub body: Block,
+    pub else_branches: Vec<ElseBranch>,
+    pub final_branch: Option<Block>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum VariantKind {
+    SimpleConstant(Ident),
+    Tuple {
+        name: Ident,
+        elems: Vec<Ty>,
+    },
+    Struct {
+        name: Ident,
+        members: Vec<StructMember>,
+    },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct StructMember {
+    pub name: Ident,
+    pub ty: Ty,
+    pub span: Span,
+}
+
+// NOTE(Simon): This is just how we represent types in the ast after parsing.
+// NOTE(Simon): If you wan't to work on the typechecker you have to look in the typechecking module
+#[derive(Debug, PartialEq, Eq)]
+pub struct Ty {
+    pub kind: TyKind,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum TyKind {
+    /// example: `(u32, u32)`
+    Tup(Vec<Ty>),
+
+    /// example: Foo
+    Ident(Ident),
+
+    /// example: `Foo<Bar, u8>`
+    /// `Foo` is the base
+    /// `Bar` and `u8` are the generic bounds for the type `Foo`
+    Generic { base: Ident, bounds: Vec<Ty> },
+}
+
+impl Ty {
+    pub const fn default_unit_type(span: Span) -> Self {
+        Self {
+            kind: TyKind::Tup(vec![]),
+            span,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Directive {
+    pub kind: DirectiveKind,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DirectiveKind {
+    Tag(DirectiveName),
+    MetaFunc {
+        name: DirectiveName,
+        args: Option<Vec<Token>>,
+    },
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum DirectiveName {
+    Use,
+    Custom(Ident),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ImportPath {
+    pub base_path: Path,
+    pub qualifier: ImportQualifier,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ImportQualifier {
+    ItemList(Vec<Ident>),
+    WildCard,
+    JustPath,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -62,13 +274,15 @@ pub enum ExprKind {
     #[derivative(Debug = "transparent")]
     Path(Path),
 
-    #[derivative(Debug = "transparent")]
     /// Enum variant where the specific type has to be infered
     /// example: .Some(42)
     ///           ^^^^-variant
     /// should desugar to:
     ///          Option::Some(42)
-    InferedEnum(Ident),
+    InferedEnum {
+        variant: Ident,
+        pat: Option<Box<Pat>>,
+    },
 
     Var(Ident),
 
@@ -122,6 +336,10 @@ pub enum ExprKind {
         callee: Box<Expr>,
         args: Vec<Expr>,
     },
+    /// Blocks can act like values in this language
+    /// example: foo := { 42 };
+    /// If you don't terminate an expression with a semicolon it becomes the value of the block
+    Block(Box<Block>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -171,23 +389,58 @@ pub enum ArrayInit {
     Filler { val: Box<Expr>, len: Box<Expr> },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Derivative, Clone, PartialEq, Eq)]
+#[derivative(Debug)]
 pub struct Ident {
     pub data: String,
+
+    //#[derivative(Debug = "ignore")]
     pub span: Span,
+}
+
+#[derive(Derivative, PartialEq, Eq)]
+#[derivative(Debug)]
+pub struct Pat {
+    pub kind: PatKind,
+
+    //#[derivative(Debug = "ignore")]
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum PatKind {
+    /// The Or pattern must match at least 1 subpattern
+    /// example: .Some(42) | .Some(0) == .Some(42)
+    Or(Vec<Pat>),
+
+    /// The expr pattern matches if and only if both patters are identical
+    /// example: .Some(42) == .Some(42)
+    Expr(Expr),
+
+    /// The wildcard pattern matches against every other pattern
+    /// wildcard syntax: _
+    /// example: .Some(_) == .Some(42)
+    WildCard,
 }
 
 pub type PathSegment = Ident;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Derivative, Clone, PartialEq, Eq)]
+#[derivative(Debug)]
 pub struct Path {
     pub segments: Vec<PathSegment>,
+
+    //#[derivative(Debug = "ignore")]
     pub span: Span,
 }
 
 impl Path {
     pub fn len(&self) -> usize {
         self.segments.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.segments.is_empty()
     }
 
     pub fn first(&self) -> Option<&PathSegment> {
@@ -225,7 +478,7 @@ impl TryFrom<Token> for BinOp {
             TokenKind::LessEq => Ok(Self::LessEq),
             _ => {
                 let msg = format!("Failed to covert token: {:?} to binary operator", t);
-                let sp = Some(t.span.clone());
+                let sp = Some(t.span);
                 let diag = Diagnostic::builder()
                     .lvl(Level::Internal(sp))
                     .msg(msg)
