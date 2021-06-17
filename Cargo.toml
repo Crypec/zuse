@@ -7,4 +7,5 @@ members = [
 	"compiler/konrad_err",
 	"compiler/konrad_lexer",
 	"compiler/konrad_parser"
+	"compiler/konrad_typer",
 ]
