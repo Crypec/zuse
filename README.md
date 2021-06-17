@@ -1,7 +1,7 @@
 # Zuse
 
 <img align="left" src="resources/zuse_logo.svg" alt="original logo of the Zuse KG" width="200"/>
-Zuse is a new programming language which aims make writing lightning fast code
+Zuse is a new programming language which aims to make writing lightning fast code
 as easy as possible by providing extensible meta programming mechanisms to easily
 verify programm correctness.
 
@@ -85,7 +85,8 @@ for _ := 0..300 {
 
 ```haskell
 -- // A max age of 140 years seems to be a pretty good estimate.
--- // At least according to wikipedia: https://en.wikipedia.org/wiki/List_of_the_verified_oldest_people
+-- // At least according to wikipedia:
+-- // https://en.wikipedia.org/wiki/List_of_the_verified_oldest_people
 -- // So if a user of your software claims to be Elvis Presley and 200 years old something is probably not right :D
 Age :: 0..=140;
 
