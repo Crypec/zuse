@@ -1,4 +1,42 @@
-
+tento/
 target/
 llvm_ir_test/
 test.zs
+
+
+# ignore emacs editor files
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Org-mode
+.org-id-locations
+*_archive
+ltximg/**
+
+# flymake-mode
+*_flymake.*
+
+# eshell files
+/eshell/history
+/eshell/lastdir
+
+# elpa packages
+/elpa/
+
+# Flycheck
+flycheck_*.el
+
+# projectiles files
+.projectile
+
+# directory configuration
+.dir-locals.el
+
+.\#*
+\#*\#
