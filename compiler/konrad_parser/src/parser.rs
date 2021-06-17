@@ -1,15 +1,22 @@
 use konrad_ast::ast::*;
 use konrad_err::diagnostic::*;
 use konrad_lexer::token::*;
-use konrad_span::span::*;
-use std::convert::TryInto;
+use konrad_session::session::*;
 
-type PResult<T> = Result<T, Diagnostic>;
+#[allow(unused_imports)]
+use konrad_err::diagnostic::*;
+
+#[allow(unused_imports)]
+use konrad_span::span::*;
+
+use std::convert::TryInto;
+use std::path::PathBuf;
 
 #[derive(Debug)]
-pub struct Parser {
+pub struct Parser<'s> {
     cursor: usize,
     buf: Vec<Token>,
+    sess: &'s mut Session,
 }
 
 macro_rules! __parse_bin_expr_impl {

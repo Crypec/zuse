@@ -1,31 +1,41 @@
 use crate::token::*;
-use konrad_err::diagnostic::*;
 use konrad_span::span::*;
 use std::path::PathBuf;
 
-type LexResult<T> = Result<T, Diagnostic>;
+use konrad_session::session::*;
 
 #[derive(Debug)]
-pub struct Lexer {
+pub struct Lexer<'s> {
     pos: Position,
     path: PathBuf,
 
     cursor: usize,
     buf: Vec<char>,
+
+    sess: &'s mut Session,
 }
 
-impl Lexer {
-    pub fn new<T: Into<String>, P: Into<PathBuf>>(buf: T, path: P) -> Self {
+impl<'s> Lexer<'s> {
+    pub fn new<T: Into<String>, P: Into<PathBuf>>(buf: T, path: P, sess: &'s mut Session) -> Self {
         Self {
             pos: Position::default(),
             path: path.into(),
 
             buf: buf.into().chars().collect(),
             cursor: 0,
+            sess,
         }
     }
 
-    pub fn scan_token(&mut self) -> LexResult<Token> {
+    pub fn scan_tokens(&mut self) -> Vec<Token> {
+        let mut tokens = Vec::with_capacity(1000);
+        while self.has_next() {
+            tokens.push(self.scan_token().unwrap());
+        }
+        tokens
+    }
+
+    fn scan_token(&mut self) -> Option<Token> {
         let start = self.cursor;
 
         self.pos.reset_pos_for_new_token();
@@ -140,62 +150,64 @@ impl Lexer {
         };
 
         let span = self.get_current_span();
-        Ok(Token { kind, span })
+        Some(Token { kind, span })
     }
 
+    /// TODO(Simon): Implement float parsing
     fn lex_num<F>(
         &mut self,
         start: usize,
         radix: u32,
         prefix_len: usize,
         matches: F,
-    ) -> LexResult<TokenKind>
+    ) -> Option<TokenKind>
     where
         F: Fn(char) -> bool,
     {
         self.inc_cursor(prefix_len);
+
         self.advance_while(|c| matches(c) || c == '_')?;
 
         let num_start = start + prefix_len;
         let num_str = self.sub_string(num_start, self.cursor).replace("_", "");
         match u128::from_str_radix(&num_str, radix) {
-            Ok(n) => Ok(TokenKind::Lit(Lit::Num(n))),
+            Ok(n) => Some(TokenKind::Lit(Lit::Num(n))),
             Err(e) => {
                 let sp = self.get_current_span();
-                let diag = Diagnostic::builder()
-                    .lvl(Level::Error(sp))
-                    .msg(format!(
-                        "Failed to parse number literal with radix {}",
-                        radix
-                    ))
-                    .note(&format!("{:?}", e))
-                    .build();
-                Err(diag)
+                let msg = format!("Failed to parse number literal with radix {}", radix);
+                self.sess.span_err(msg, sp).add_note(format!("{:?}", e));
+
+                // NOTE(Simon): Should we really emit a valid token?
+                // NOTE(Simon): This allows use to report more errors in a single run but we have
+                // NOTE(Simon): to be careful not to emit false diagnostic based on this token.
+                Some(TokenKind::Lit(Lit::Num(0)))
             }
         }
     }
 
-    fn lex_ident(&mut self, start: usize) -> LexResult<TokenKind> {
+    fn lex_ident(&mut self, start: usize) -> Option<TokenKind> {
         self.advance_while(|p| p.is_alphanumeric() || p == '_')?;
         let lexeme = self.sub_string(start, self.cursor);
-        Ok(str::parse::<Keyword>(&lexeme)
-            .map(TokenKind::Keyword)
-            .unwrap_or(TokenKind::Ident(lexeme)))
+        Some(
+            str::parse::<Keyword>(&lexeme)
+                .map(TokenKind::Keyword)
+                .unwrap_or(TokenKind::Ident(lexeme)),
+        )
     }
 
-    fn lex_string(&mut self, start: usize) -> LexResult<TokenKind> {
+    fn lex_string(&mut self, start: usize) -> Option<TokenKind> {
         self.advance_while(|p| p != '"')?;
         self.next_char()?; // skip "
         let lexeme = self.sub_string(start + 1, self.cursor - 1);
-        Ok(TokenKind::Lit(Lit::Text(lexeme)))
+        Some(TokenKind::Lit(Lit::Text(lexeme)))
     }
 
-    fn eat_whitespace(&mut self) -> LexResult<TokenKind> {
+    fn eat_whitespace(&mut self) -> Option<TokenKind> {
         self.advance_while(|c| c.is_whitespace())?;
-        Ok(TokenKind::WhiteSpace)
+        Some(TokenKind::WhiteSpace)
     }
 
-    fn advance_while<F>(&mut self, f: F) -> LexResult<()>
+    fn advance_while<F>(&mut self, f: F) -> Option<()>
     where
         F: Fn(char) -> bool,
     {
@@ -205,7 +217,7 @@ impl Lexer {
                 false => break,
             };
         }
-        Ok(())
+        Some(())
     }
 
     fn get_current_span(&self) -> Span {
@@ -302,16 +314,5 @@ impl Position {
     fn update_new_line(&mut self) {
         self.current_line += 1;
         self.end_col = 0;
-    }
-}
-
-impl Iterator for Lexer {
-    type Item = LexResult<Token>;
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.has_next() {
-            Some(self.scan_token())
-        } else {
-            None
-        }
     }
 }

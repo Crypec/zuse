@@ -11,3 +11,4 @@ konrad_ast	 = { path = "../konrad_ast"}
 konrad_err   = { path = "../konrad_err" }
 konrad_span  = { path = "../konrad_span" }
 konrad_lexer = { path = "../konrad_lexer" }
+konrad_session = { path = "../konrad_session" }
