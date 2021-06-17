@@ -10,7 +10,7 @@ pub struct LineColumn {
 }
 
 impl LineColumn {
-    pub fn new(line: usize, col: usize) -> Self {
+    pub const fn new(line: usize, col: usize) -> Self {
         Self { line, col }
     }
 }
@@ -89,7 +89,7 @@ impl Ord for LineColumn {
 
 impl PartialOrd for LineColumn {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(&other))
+        Some(self.cmp(other))
     }
 }
 
