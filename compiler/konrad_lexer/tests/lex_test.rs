@@ -1,6 +1,5 @@
 use konrad_err::diagnostic::*;
-use konrad_lexer::lexer::*;
-use konrad_lexer::token::*;
+use konrad_lexer::{lexer::*, token::*};
 use pretty_assertions::assert_eq;
 
 // This is just for testing, this file does not exist
@@ -114,10 +113,7 @@ fn lex_dec_num() {
 
 #[test]
 fn lex_hex_num() {
-    assert_tokens_eq!(
-        "0x0123456789ABCDEF",
-        TokenKind::Lit(Lit::Num(0x0123456789ABCDEF))
-    );
+    assert_tokens_eq!("0x0123456789ABCDEF", TokenKind::Lit(Lit::Num(0x0123456789ABCDEF)));
 }
 
 #[test]
@@ -351,10 +347,8 @@ fn lex_expr_operators() {
 }
 
 fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<TokenKind> {
-    let (tokens, errs): (
-        Vec<Result<Token, Diagnostic>>,
-        Vec<Result<Token, Diagnostic>>,
-    ) = Lexer::new(src, TEST_FILE_PATH).partition(Result::is_ok);
+    let (tokens, errs): (Vec<Result<Token, Diagnostic>>, Vec<Result<Token, Diagnostic>>) =
+        Lexer::new(src, TEST_FILE_PATH).partition(Result::is_ok);
     let tokens: Vec<_> = tokens
         .into_iter()
         .map(Result::unwrap)
@@ -366,7 +360,7 @@ fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<TokenKind> {
         #[derive(Debug)]
         struct LexError {
             tokens: Vec<TokenKind>,
-            errs: Vec<Diagnostic>,
+            errs:   Vec<Diagnostic>,
         }
         assert!(
             errs.is_empty(),

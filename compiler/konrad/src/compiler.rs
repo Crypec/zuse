@@ -1,26 +1,22 @@
-use crate::workspace::*;
-
+use glob::glob;
 use konrad_session::session::*;
 
-use glob::glob;
+use crate::workspace::*;
 
 pub struct Compiler {
     workspaces: Vec<Workspace>,
-    session: Session,
+    session:    Session,
 }
 
 impl Compiler {
     pub fn new() -> Self {
         let current_directory = std::env::current_dir().expect("failed to get current directory");
-        let zuse_files = glob("**/*.zs")
-            .expect("failed to get")
-            .filter_map(Result::ok)
-            .collect();
+        let zuse_files = glob("**/*.zs").expect("failed to get").filter_map(Result::ok).collect();
         let default_ws = Workspace::new(current_directory, zuse_files);
 
         Self {
             workspaces: vec![default_ws],
-            session: Session::new(),
+            session:    Session::new(),
         }
     }
 

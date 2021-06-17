@@ -1,7 +1,6 @@
-use derivative::*;
-use std::convert::TryFrom;
-use std::path::PathBuf;
+use std::{convert::TryFrom, path::PathBuf};
 
+use derivative::*;
 use konrad_err::diagnostic::*;
 use konrad_lexer::token::*;
 use konrad_span::span::Span;
@@ -13,17 +12,12 @@ pub struct Programm {
 
 #[derive(Debug)]
 pub struct FileNode {
-    pub path: PathBuf,
+    pub path:  PathBuf,
     pub decls: Vec<Decl>,
 }
 
 impl FileNode {
-    pub const fn new(path: PathBuf) -> Self {
-        Self {
-            path,
-            decls: vec![],
-        }
-    }
+    pub const fn new(path: PathBuf) -> Self { Self { path, decls: vec![] } }
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -36,42 +30,41 @@ pub struct Decl {
 pub enum DeclKind {
     Directive(Directive),
     Enum {
-        name: Ident,
+        name:     Ident,
         variants: Vec<EnumVariant>,
     },
     Struct {
-        name: Ident,
+        name:    Ident,
         members: Vec<StructMember>,
     },
     Const {
-        name: Ident,
+        name:  Ident,
         value: Expr,
     },
     Fn {
-        sig: FnSig,
+        sig:  FnSig,
         body: Box<Block>,
     },
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct FnSig {
-    pub name: Ident,
-    pub args: Vec<FnArgument>,
+    pub name:   Ident,
+    pub args:   Vec<FnArgument>,
     pub ret_ty: Ty,
-    pub span: Span,
+    pub span:   Span,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct FnArgument {
     pub name: Ident,
-    pub ty: Ty,
+    pub ty:   Ty,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Block {
     pub stmts: Vec<Stmt>,
-    pub value: Option<Expr>,
-    pub span: Span,
+    pub span:  Span,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -88,17 +81,27 @@ pub struct Stmt {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum StmtKind {
+    /// Expr stmt terminated with a ;
     Expr(Expr),
+
+    /// Expr stmt not terminated with a ;
+    /// example
+    /// a := { 42 }
+    /// here value gets assinged the value of 42 as it is the last expression in
+    /// the block and not terminated with a semicolon.
+    BlockValue(Expr),
+
     For {
-        var: Pat,
+        var:  Pat,
         init: Expr,
     },
     While {
         cond: Expr,
         body: Block,
     },
+
     WhileAssign {
-        pat: Pat,
+        pat:  Pat,
         cond: Expr,
         body: Block,
     },
@@ -108,10 +111,10 @@ pub enum StmtKind {
     If(IfStmt),
     ConstIf(IfStmt),
     IfAssign {
-        pat: Pat,
-        cond: Expr,
+        pat:           Pat,
+        cond:          Expr,
         else_branches: Vec<ElseAssignBranch>,
-        final_branch: Option<Block>,
+        final_branch:  Option<Block>,
     },
     Break {
         label: Option<Ident>,
@@ -124,7 +127,7 @@ pub enum StmtKind {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ElseAssignBranch {
-    pub pat: Pat,
+    pub pat:  Pat,
     pub cond: Expr,
     pub body: Block,
 }
@@ -137,34 +140,29 @@ pub struct ElseBranch {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct IfStmt {
-    pub cond: Expr,
-    pub body: Block,
+    pub cond:          Expr,
+    pub body:          Block,
     pub else_branches: Vec<ElseBranch>,
-    pub final_branch: Option<Block>,
+    pub final_branch:  Option<Block>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum VariantKind {
     SimpleConstant(Ident),
-    Tuple {
-        name: Ident,
-        elems: Vec<Ty>,
-    },
-    Struct {
-        name: Ident,
-        members: Vec<StructMember>,
-    },
+    Tuple { name: Ident, elems: Vec<Ty> },
+    Struct { name: Ident, members: Vec<StructMember> },
 }
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct StructMember {
     pub name: Ident,
-    pub ty: Ty,
+    pub ty:   Ty,
     pub span: Span,
 }
 
 // NOTE(Simon): This is just how we represent types in the ast after parsing.
-// NOTE(Simon): If you wan't to work on the typechecker you have to look in the typechecking module
+// NOTE(Simon): If you wan't to work on the typechecker you have to look in the
+// typechecking module
 #[derive(Debug, PartialEq, Eq)]
 pub struct Ty {
     pub kind: TyKind,
@@ -243,7 +241,7 @@ pub enum ExprKind {
     Binary {
         lhs: Box<Expr>,
         rhs: Box<Expr>,
-        op: BinOp,
+        op:  BinOp,
     },
 
     /// one sided expression
@@ -251,14 +249,14 @@ pub enum ExprKind {
     ///          ^-op ^-rhs
     Unary {
         rhs: Box<Expr>,
-        op: UnaryOp,
+        op:  UnaryOp,
     },
 
     /// struct literals are used to initialize objects with values
     /// example: Person {name: "Torben"}
     ///          ^-name  ^^^^^^^^^^^^^^- member with name and init expr
     Struct {
-        path: Path,
+        path:   Path,
         fields: Vec<(Ident, Expr)>,
     },
 
@@ -268,8 +266,8 @@ pub enum ExprKind {
     #[derivative(Debug = "transparent")]
     Tup(Vec<Expr>),
 
-    /// variable reference, possibly containing `::` to refer to types in other moduels
-    /// example: foo::bar
+    /// variable reference, possibly containing `::` to refer to types in other
+    /// moduels example: foo::bar
     ///          ^^^-segment
     #[derivative(Debug = "transparent")]
     Path(Path),
@@ -281,7 +279,7 @@ pub enum ExprKind {
     ///          Option::Some(42)
     InferedEnum {
         variant: Ident,
-        pat: Option<Box<Pat>>,
+        pat:     Option<Box<Pat>>,
     },
 
     Var(Ident),
@@ -291,7 +289,7 @@ pub enum ExprKind {
     ///          ^-callee ^index
     Index {
         callee: Box<Expr>,
-        index: Box<Expr>,
+        index:  Box<Expr>,
     },
 
     #[derivative(Debug = "transparent")]
@@ -301,8 +299,8 @@ pub enum ExprKind {
     /// example: 0   ..   10
     ///           ^-start ^-end
     Range {
-        lo: Box<Expr>,
-        hi: Box<Expr>,
+        lo:   Box<Expr>,
+        hi:   Box<Expr>,
         kind: RangeKind,
     },
 
@@ -319,13 +317,14 @@ pub enum ExprKind {
     ///          ^-callee ^ field
     Field(Box<Expr>, Ident),
 
-    /// refers to a object instance and can be used to refer to that instance and it's member fields e.g. (selbst.foo)
-    /// if a function contains self as an argument in it's signature it automatically becomes an associated 'Method' with that datatype
-    /// NOTE: there are a few restrictions while using self in a function
-    /// 1. self can only be used inside impl blocks
-    /// 2. if a function contains self in it's signature self has to be the first parameter
-    /// 3. the self parameter does not need to have any addition type information
-    /// example: self    .     foo
+    /// refers to a object instance and can be used to refer to that instance
+    /// and it's member fields e.g. (selbst.foo) if a function contains self
+    /// as an argument in it's signature it automatically becomes an associated
+    /// 'Method' with that datatype NOTE: there are a few restrictions while
+    /// using self in a function 1. self can only be used inside impl blocks
+    /// 2. if a function contains self in it's signature self has to be the
+    /// first parameter 3. the self parameter does not need to have any
+    /// addition type information example: self    .     foo
     ///          ^-instance ptr  ^-member field
     This,
 
@@ -334,11 +333,12 @@ pub enum ExprKind {
     ///          ^-callee ^-arg0  ^-arg1
     Call {
         callee: Box<Expr>,
-        args: Vec<Expr>,
+        args:   Vec<Expr>,
     },
     /// Blocks can act like values in this language
     /// example: foo := { 42 };
-    /// If you don't terminate an expression with a semicolon it becomes the value of the block
+    /// If you don't terminate an expression with a semicolon it becomes the
+    /// value of the block
     Block(Box<Block>),
 }
 
@@ -383,8 +383,8 @@ pub enum ArrayInit {
     ///           ^-create new array with values from 1 to including 5
     List(Vec<Expr>),
 
-    /// fill initializers create a new array of a certain len by repeating an expression
-    /// example: [0; 10]
+    /// fill initializers create a new array of a certain len by repeating an
+    /// expression example: [0; 10]
     ///           ^-creates an array of len 10 filled with 0
     Filler { val: Box<Expr>, len: Box<Expr> },
 }
@@ -435,25 +435,18 @@ pub struct Path {
 }
 
 impl Path {
-    pub fn len(&self) -> usize {
-        self.segments.len()
-    }
+    pub fn len(&self) -> usize { self.segments.len() }
 
-    pub fn is_empty(&self) -> bool {
-        self.segments.is_empty()
-    }
+    pub fn is_empty(&self) -> bool { self.segments.is_empty() }
 
-    pub fn first(&self) -> Option<&PathSegment> {
-        self.segments.first()
-    }
+    pub fn first(&self) -> Option<&PathSegment> { self.segments.first() }
 
-    pub fn last(&self) -> Option<&PathSegment> {
-        self.segments.last()
-    }
+    pub fn last(&self) -> Option<&PathSegment> { self.segments.last() }
 }
 
 impl TryFrom<Token> for BinOp {
     type Error = Diagnostic;
+
     fn try_from(t: Token) -> Result<Self, Self::Error> {
         match t.kind {
             TokenKind::Plus => Ok(Self::Plus),
@@ -488,13 +481,14 @@ impl TryFrom<Token> for BinOp {
                     )
                     .build();
                 Err(diag)
-            }
+            },
         }
     }
 }
 
 impl TryFrom<Token> for UnaryOp {
     type Error = Diagnostic;
+
     fn try_from(t: Token) -> Result<Self, Self::Error> {
         match t.kind {
             TokenKind::Bang => Ok(Self::Not),
@@ -513,7 +507,7 @@ impl TryFrom<Token> for UnaryOp {
                     )
                     .build();
                 Err(diag)
-            }
+            },
         }
     }
 }

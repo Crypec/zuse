@@ -1,9 +1,7 @@
-use konrad_span::span::*;
-
-use std::cmp::Ordering;
-use std::fmt;
+use std::{cmp::Ordering, fmt};
 
 use colored::*;
+use konrad_span::span::*;
 use typed_builder::TypedBuilder;
 
 /// A Diagnostic represents a message to the user
@@ -26,14 +24,15 @@ pub struct Diagnostic {
 pub enum Level {
     /// Hard compile time errors
     Error(Span),
-    /// Soft compile time warnings. The compiler will still exit with sucessfully even if you emit
-    /// a Warning.
+    /// Soft compile time warnings. The compiler will still exit with
+    /// sucessfully even if you emit a Warning.
     Warning(Span),
 
     /// A Note can be used to give extra information to the user.
     Note(Span),
 
-    /// Internal bugs inside the compiler. The end user is never supposed to see this.
+    /// Internal bugs inside the compiler. The end user is never supposed to see
+    /// this.
     // NOTE(Simon): Because we also use diagnostics to represent internal errors we can't always
     // NOTE(Simon): guarantee that we know the src location which lead to the internal bug
     Internal(Option<Span>),
@@ -63,9 +62,7 @@ impl Ord for Level {
 }
 
 impl PartialOrd for Level {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
 impl Level {
@@ -88,20 +85,16 @@ pub struct Suggestion {
 }
 
 impl Diagnostic {
-    pub fn add_note<S: Into<String>>(&mut self, note: S) {
-        self.note = Some(note.into());
-    }
-    pub fn set_msg<S: Into<String>>(&mut self, msg: S) {
-        self.msg = msg.into();
-    }
+    pub fn add_note<S: Into<String>>(&mut self, note: S) { self.note = Some(note.into()); }
+
+    pub fn set_msg<S: Into<String>>(&mut self, msg: S) { self.msg = msg.into(); }
 }
 
 impl fmt::Display for Diagnostic {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(f)?;
         if let Level::Error(ref sp) | Level::Warning(ref sp) | Level::Note(ref sp) = self.lvl {
-            let file = std::fs::read_to_string(&sp.path)
-                .expect("failed to read src file while printing error");
+            let file = std::fs::read_to_string(&sp.path).expect("failed to read src file while printing error");
 
             let color = match self.lvl {
                 Level::Error(_) => Color::BrightRed,
@@ -154,19 +147,12 @@ impl fmt::Display for Diagnostic {
 
 fn emit_src_span(sp: &Span, color: Color, lines: &[&str], f: &mut fmt::Formatter) -> fmt::Result {
     let start = (&lines[sp.start.line][..sp.start.col]).bright_blue();
-    let highlight = (&lines[sp.start.line][sp.start.col..=sp.end.col])
-        .color(color)
-        .bold();
+    let highlight = (&lines[sp.start.line][sp.start.col..=sp.end.col]).color(color).bold();
 
     let end = (&lines[sp.end.line][sp.end.col..][1..]).bright_blue();
     let line_num_len = sp.start.line.to_string().chars().count();
 
-    writeln!(
-        f,
-        "{:>pad$}",
-        "|".bold().bright_blue(),
-        pad = line_num_len + 2
-    )?;
+    writeln!(f, "{:>pad$}", "|".bold().bright_blue(), pad = line_num_len + 2)?;
     writeln!(
         f,
         "{} {:>pad$} {}{}{}",
@@ -177,10 +163,5 @@ fn emit_src_span(sp: &Span, color: Color, lines: &[&str], f: &mut fmt::Formatter
         end,
         pad = line_num_len,
     )?;
-    writeln!(
-        f,
-        "{:>pad$}",
-        "|".bold().bright_blue(),
-        pad = line_num_len + 2
-    )
+    writeln!(f, "{:>pad$}", "|".bold().bright_blue(), pad = line_num_len + 2)
 }

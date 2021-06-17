@@ -1,23 +1,20 @@
-use konrad_ast::*;
-use konrad_lexer::token::*;
-use konrad_session::session::*;
+use std::{convert::TryInto, path::PathBuf};
 
+use konrad_ast::*;
 #[allow(unused_imports)]
 use konrad_err::diagnostic::*;
-
+use konrad_lexer::token::*;
+use konrad_session::session::*;
 #[allow(unused_imports)]
 use konrad_span::span::*;
-
-use std::convert::TryInto;
-use std::path::PathBuf;
 
 #[derive(Debug)]
 pub struct Parser<'s> {
     cursor: usize,
     // NOTE(Simon): If we use a better container here we could save a lot of clones while advancing
     // NOTE(Simon): through next_t()
-    buf: Vec<Token>,
-    sess: &'s mut Session,
+    buf:    Vec<Token>,
+    sess:   &'s mut Session,
 }
 
 macro_rules! __parse_bin_expr_impl {
@@ -32,7 +29,7 @@ macro_rules! __parse_bin_expr_impl {
                     Err(d) => {
                         self.sess.report_diagnostic(d);
                         return None;
-                    }
+                    },
                 };
                 let rhs = self.$inner()?;
                 let span = lhs.span.merge(&rhs.span);
@@ -51,6 +48,22 @@ macro_rules! __parse_bin_expr_impl {
 }
 
 impl<'s> Parser<'s> {
+    __parse_bin_expr_impl!(parse_or, parse_and, TokenKind::Or);
+
+    __parse_bin_expr_impl!(parse_and, parse_eq, TokenKind::And);
+
+    __parse_bin_expr_impl!(parse_eq, parse_cmp, (TokenKind::EqEq | TokenKind::NotEq));
+
+    __parse_bin_expr_impl!(
+        parse_cmp,
+        parse_term,
+        (TokenKind::Greater | TokenKind::GreaterEq | TokenKind::Less | TokenKind::LessEq)
+    );
+
+    __parse_bin_expr_impl!(parse_term, parse_factor, (TokenKind::Plus | TokenKind::Minus));
+
+    __parse_bin_expr_impl!(parse_factor, parse_unary, (TokenKind::Star | TokenKind::Slash));
+
     pub fn new(buf: Vec<Token>, session: &'s mut Session) -> Self {
         Self {
             cursor: 0,
@@ -59,9 +72,7 @@ impl<'s> Parser<'s> {
         }
     }
 
-    pub fn parse(&mut self) -> Option<Decl> {
-        self.parse_decl()
-    }
+    pub fn parse(&mut self) -> Option<Decl> { self.parse_decl() }
 
     pub fn parse_entrie_file(&mut self, path: PathBuf) -> FileNode {
         let mut file_node = FileNode::new(path);
@@ -90,7 +101,7 @@ impl<'s> Parser<'s> {
                 ) =>
                 {
                     return
-                }
+                },
                 Some(_) => continue,
                 None => return,
             }
@@ -118,26 +129,17 @@ impl<'s> Parser<'s> {
             TokenKind::Keyword(Keyword::Struct),
             "You need to use the `struct` keyword to declare a struct type",
         )?;
-        self.eat(
-            TokenKind::LBrace,
-            "expected the opening `{` before the struct body",
-        )?;
+        self.eat(TokenKind::LBrace, "expected the opening `{` before the struct body")?;
 
         let mut members = vec![];
         while self.peek_kind()? != TokenKind::RBrace {
             members.push(self.parse_struct_member()?);
             if self.peek_kind()? != TokenKind::RBrace {
-                self.eat(
-                    TokenKind::Comma,
-                    "expected a `,` to seperate struct members",
-                )?;
+                self.eat(TokenKind::Comma, "expected a `,` to seperate struct members")?;
             }
         }
         let span = self
-            .eat(
-                TokenKind::RBrace,
-                "expected a closing `}` after struct body",
-            )?
+            .eat(TokenKind::RBrace, "expected a closing `}` after struct body")?
             .span
             .merge(&name.span);
         Some(Decl {
@@ -196,17 +198,14 @@ impl<'s> Parser<'s> {
                     kind: VariantKind::Tuple { name, elems },
                     span,
                 })
-            }
+            },
             TokenKind::LBrace => {
                 let opening = self.next_t()?.span;
 
                 let mut members = vec![];
                 while self.peek_kind()? != TokenKind::RBrace {
                     members.push(self.parse_struct_member()?);
-                    self.eat(
-                        TokenKind::Comma,
-                        "expected comma after struct member in enum variant",
-                    )?;
+                    self.eat(TokenKind::Comma, "expected comma after struct member in enum variant")?;
                 }
                 let span = self.next_t()?.span.merge(&opening);
 
@@ -214,14 +213,14 @@ impl<'s> Parser<'s> {
                     kind: VariantKind::Struct { name, members },
                     span,
                 })
-            }
+            },
             _ => {
                 let span = name.span.clone();
                 Some(EnumVariant {
                     kind: VariantKind::SimpleConstant(name),
                     span,
                 })
-            }
+            },
         }
     }
 
@@ -253,15 +252,12 @@ impl<'s> Parser<'s> {
                 while self.peek_kind()? != TokenKind::RParen {
                     elems.push(self.parse_ty_quiet()?);
                     if self.peek_kind()? != TokenKind::RParen {
-                        self.eat(
-                            TokenKind::Comma,
-                            "expected a comma to seperate a type tuple",
-                        )?;
+                        self.eat(TokenKind::Comma, "expected a comma to seperate a type tuple")?;
                     }
                 }
                 let span = self.next_t()?.span.merge(&opening);
                 (TyKind::Tup(elems), span)
-            }
+            },
             TokenKind::Ident(_) => {
                 let i = self.parse_ident("expected name of type")?;
                 if let Some(TokenKind::Less) = self.peek_kind() {
@@ -282,7 +278,7 @@ impl<'s> Parser<'s> {
                     let span = i.span.clone();
                     (TyKind::Ident(i), span)
                 }
-            }
+            },
             _ => return None,
         };
         Some(Ty { kind, span })
@@ -293,10 +289,7 @@ impl<'s> Parser<'s> {
         let body = self.parse_block()?;
         let span = sig.span.merge(&body.span);
         Some(Decl {
-            kind: DeclKind::Fn {
-                sig,
-                body: box body,
-            },
+            kind: DeclKind::Fn { sig, body: box body },
             span,
         })
     }
@@ -320,10 +313,7 @@ impl<'s> Parser<'s> {
         }
 
         let closing = self
-            .eat(
-                TokenKind::RParen,
-                "expected closing `)` after function argument list",
-            )?
+            .eat(TokenKind::RParen, "expected closing `)` after function argument list")?
             .span;
 
         let ret_ty = if self.peek_kind()? == TokenKind::ThinArrow {
@@ -343,19 +333,27 @@ impl<'s> Parser<'s> {
     }
 
     fn parse_block(&mut self) -> Option<Block> {
-        let start = self
-            .eat(TokenKind::RBrace, "expected `{` to open a new block")?
-            .span;
+        let start = self.eat(TokenKind::RBrace, "expected `{` to open a new block")?.span;
 
-        let _block_value: Option<Expr> = None;
         let mut stmts = vec![];
         while self.peek_kind()? != TokenKind::RBrace {
             let s = self.parse_stmt()?;
+            if let Stmt {
+                kind: StmtKind::BlockValue(_),
+                span: sp,
+            } = &s
+            {
+                if self.peek_kind()? != TokenKind::RBrace {
+                    self.sess
+                        .span_err("Unexpected stmt after after block value", sp.clone())
+                        .add_note("Did you forget to add a terminating semicolon?");
+                    return None;
+                }
+            }
             stmts.push(s);
         }
-        let _span = self.next_t()?.span.merge(&start);
-
-        todo!();
+        let span = self.next_t()?.span.merge(&start); // consome closing RBrace
+        Some(Block { stmts, span })
     }
 
     fn parse_stmt(&mut self) -> Option<Stmt> {
@@ -377,7 +375,7 @@ impl<'s> Parser<'s> {
                     todo!()
                 }
                 todo!()
-            }
+            },
         }
     }
 
@@ -405,8 +403,8 @@ impl<'s> Parser<'s> {
         let directive_name = Self::match_directive_name(name_ident);
 
         let args = if let Some(TokenKind::LParen) = self.peek_kind() {
-            // TODO(Simon): We have to decide if we really want to allow this kind of unstructured
-            // TODO(Simon): input to meta function directives.
+            // TODO(Simon): We have to decide if we really want to allow this kind of
+            // unstructured TODO(Simon): input to meta function directives.
             {
                 self.next_t()?; // consume opening paren
                 let mut input_tokens = vec![];
@@ -421,10 +419,7 @@ impl<'s> Parser<'s> {
         };
 
         let span = self
-            .eat(
-                TokenKind::RBracket,
-                "expected closing `]` of meta func directive",
-            )?
+            .eat(TokenKind::RBracket, "expected closing `]` of meta func directive")?
             .span
             .merge(&start);
 
@@ -464,12 +459,10 @@ impl<'s> Parser<'s> {
                 ..
             } => self.next_t()?,
             Token { kind: _, span } => {
-                self.sess.span_err(
-                    "expected either `::` or `:=` to declare a global variable",
-                    span,
-                );
+                self.sess
+                    .span_err("expected either `::` or `:=` to declare a global variable", span);
                 return None;
-            }
+            },
         };
 
         let value = self.parse_expr()?;
@@ -491,13 +484,9 @@ impl<'s> Parser<'s> {
         todo!();
     }
 
-    fn parse_while_loop(&mut self) -> Option<Stmt> {
-        todo!()
-    }
+    fn parse_while_loop(&mut self) -> Option<Stmt> { todo!() }
 
-    pub fn parse_expr(&mut self) -> Option<Expr> {
-        self.parse_range()
-    }
+    pub fn parse_expr(&mut self) -> Option<Expr> { self.parse_range() }
 
     fn parse_range(&mut self) -> Option<Expr> {
         let lhs = self.parse_or()?;
@@ -517,25 +506,6 @@ impl<'s> Parser<'s> {
         Some(lhs)
     }
 
-    __parse_bin_expr_impl!(parse_or, parse_and, TokenKind::Or);
-    __parse_bin_expr_impl!(parse_and, parse_eq, TokenKind::And);
-    __parse_bin_expr_impl!(parse_eq, parse_cmp, (TokenKind::EqEq | TokenKind::NotEq));
-    __parse_bin_expr_impl!(
-        parse_cmp,
-        parse_term,
-        (TokenKind::Greater | TokenKind::GreaterEq | TokenKind::Less | TokenKind::LessEq)
-    );
-    __parse_bin_expr_impl!(
-        parse_term,
-        parse_factor,
-        (TokenKind::Plus | TokenKind::Minus)
-    );
-    __parse_bin_expr_impl!(
-        parse_factor,
-        parse_unary,
-        (TokenKind::Star | TokenKind::Slash)
-    );
-
     fn parse_unary(&mut self) -> Option<Expr> {
         match self.peek_kind() {
             Some(TokenKind::Bang | TokenKind::Minus | TokenKind::Ref | TokenKind::Star) => {
@@ -548,18 +518,17 @@ impl<'s> Parser<'s> {
                     Err(d) => {
                         self.sess.report_diagnostic(d);
                         return None;
-                    }
+                    },
                 };
 
                 Some(Expr {
                     kind: ExprKind::Unary { rhs: box rhs, op },
                     span,
                 })
-            }
+            },
             Some(TokenKind::Dot) => {
                 let start = self.next_t()?.span;
-                let variant =
-                    self.parse_ident("enum inference allows you to omit the type of enum")?;
+                let variant = self.parse_ident("enum inference allows you to omit the type of enum")?;
 
                 let (pat, span) = match self.peek_kind() {
                     Some(TokenKind::LParen) => {
@@ -571,7 +540,7 @@ impl<'s> Parser<'s> {
                             .span
                             .merge(&start);
                         (Some(box pat), span)
-                    }
+                    },
                     Some(TokenKind::LBrace) => {
                         self.next_t()?;
 
@@ -581,11 +550,11 @@ impl<'s> Parser<'s> {
                             .span
                             .merge(&start);
                         (Some(box pat), span)
-                    }
+                    },
                     _ => {
                         let span = start.merge(&variant.span);
                         (None, span)
-                    }
+                    },
                 };
 
                 // TODO(Simon): Allow expression in enum variants
@@ -594,7 +563,7 @@ impl<'s> Parser<'s> {
                     kind: ExprKind::InferedEnum { variant, pat },
                     span,
                 })
-            }
+            },
             _ => self.parse_call(),
         }
     }
@@ -606,10 +575,10 @@ impl<'s> Parser<'s> {
                 Some(TokenKind::LParen) => {
                     self.next_t()?;
                     lhs = self.finish_call(lhs)?;
-                }
+                },
                 Some(TokenKind::LBracket) => {
                     lhs = self.parse_index(lhs)?;
-                }
+                },
                 Some(TokenKind::Dot) => {
                     let start = self.next_t()?.span.clone();
                     let name = self.parse_ident("Expected name of struct field")?;
@@ -618,7 +587,7 @@ impl<'s> Parser<'s> {
                         kind: ExprKind::Field(box lhs, name),
                         span,
                     };
-                }
+                },
                 _ => break,
             }
         }
@@ -635,17 +604,11 @@ impl<'s> Parser<'s> {
             }
         }
         let span = self
-            .eat(
-                TokenKind::RParen,
-                "expected a closing `)` after a function call",
-            )?
+            .eat(TokenKind::RParen, "expected a closing `)` after a function call")?
             .span
             .merge(&lhs.span);
         Some(Expr {
-            kind: ExprKind::Call {
-                callee: box lhs,
-                args,
-            },
+            kind: ExprKind::Call { callee: box lhs, args },
             span,
         })
     }
@@ -654,17 +617,14 @@ impl<'s> Parser<'s> {
         self.eat(TokenKind::LBracket, "expected `[` to index into data")?;
         let index = self.parse_expr()?;
         let span = self
-            .eat(
-                TokenKind::RBracket,
-                "expected closing `]` after index operation",
-            )?
+            .eat(TokenKind::RBracket, "expected closing `]` after index operation")?
             .span
             .merge(&lhs.span);
 
         Some(Expr {
             kind: ExprKind::Index {
                 callee: box lhs,
-                index: box index,
+                index:  box index,
             },
             span,
         })
@@ -678,7 +638,7 @@ impl<'s> Parser<'s> {
                     kind: ExprKind::Lit(lit),
                     span,
                 })
-            }
+            },
             Some(TokenKind::LParen) => self.parse_tup_expr(),
             Some(TokenKind::LBracket) => self.parse_array_init(),
             Some(TokenKind::Ident(_)) => {
@@ -702,7 +662,7 @@ impl<'s> Parser<'s> {
                         span,
                     })
                 }
-            }
+            },
             Some(TokenKind::Keyword(Keyword::This)) => Some(Expr {
                 kind: ExprKind::This,
                 span: self.next_t()?.span,
@@ -714,12 +674,12 @@ impl<'s> Parser<'s> {
                     kind: ExprKind::Block(box block),
                     span,
                 })
-            }
+            },
             _ => {
                 let span = self.next_t()?.span;
                 self.sess.span_err("expected an expression", span);
                 None
-            }
+            },
         }
     }
 
@@ -737,10 +697,7 @@ impl<'s> Parser<'s> {
 
     fn parse_tup_expr(&mut self) -> Option<Expr> {
         let start = self
-            .eat(
-                TokenKind::LParen,
-                "expected `(` to start a tuple expression",
-            )?
+            .eat(TokenKind::LParen, "expected `(` to start a tuple expression")?
             .span;
 
         let mut args = vec![];
@@ -756,10 +713,7 @@ impl<'s> Parser<'s> {
             }
         }
         let end = self
-            .eat(
-                TokenKind::RParen,
-                "expected a closing `)` after a tuple expression",
-            )?
+            .eat(TokenKind::RParen, "expected a closing `)` after a tuple expression")?
             .span;
         Some(Expr {
             kind: ExprKind::Tup(args),
@@ -801,10 +755,7 @@ impl<'s> Parser<'s> {
         };
 
         let span = self
-            .eat(
-                TokenKind::RBracket,
-                "expected closing `]` after array initialization",
-            )?
+            .eat(TokenKind::RBracket, "expected closing `]` after array initialization")?
             .span
             .merge(&start);
 
@@ -815,10 +766,7 @@ impl<'s> Parser<'s> {
     }
 
     fn parse_struct_lit(&mut self, path: Path) -> Option<Expr> {
-        self.eat(
-            TokenKind::LBrace,
-            "expected a `{` to start a struct literal",
-        )?;
+        self.eat(TokenKind::LBrace, "expected a `{` to start a struct literal")?;
         let mut fields = vec![];
         while self.peek_kind() != Some(TokenKind::RBrace) {
             let name = self.parse_ident("expected name of struct field to initialize")?;
@@ -830,10 +778,7 @@ impl<'s> Parser<'s> {
             fields.push((name, init));
         }
         let span = self
-            .eat(
-                TokenKind::RBrace,
-                "expected a closing `}` after a struct literal",
-            )?
+            .eat(TokenKind::RBrace, "expected a closing `}` after a struct literal")?
             .span
             .merge(&path.first().unwrap().span);
         Some(Expr {
@@ -904,12 +849,10 @@ impl<'s> Parser<'s> {
             match self.peek_n_kind(i) {
                 Some(TokenKind::Keyword(Keyword::Enum)) => return Some(ParseDirective::Enum),
                 Some(TokenKind::Keyword(Keyword::Struct)) => return Some(ParseDirective::Struct),
-                Some(
-                    TokenKind::Lit(_) | TokenKind::RBracket | TokenKind::Plus | TokenKind::Minus,
-                ) => return Some(ParseDirective::ConstDecl),
-                Some(TokenKind::Col | TokenKind::LBrace | TokenKind::ThinArrow) => {
-                    return Some(ParseDirective::Func)
-                }
+                Some(TokenKind::Lit(_) | TokenKind::RBracket | TokenKind::Plus | TokenKind::Minus) => {
+                    return Some(ParseDirective::ConstDecl)
+                },
+                Some(TokenKind::Col | TokenKind::LBrace | TokenKind::ThinArrow) => return Some(ParseDirective::Func),
                 Some(TokenKind::Hash) => return Some(ParseDirective::HashDirective),
                 None => return None,
                 _ => i += 1,
@@ -927,22 +870,16 @@ impl<'s> Parser<'s> {
                 );
                 self.sess.span_err(msg, t.span).add_note(note);
                 None
-            }
+            },
             None => None,
         }
     }
 
-    fn peek(&self) -> Option<Token> {
-        self.peek_n(1)
-    }
+    fn peek(&self) -> Option<Token> { self.peek_n(1) }
 
-    fn peek_n_kind(&self, n: usize) -> Option<TokenKind> {
-        self.peek_n(n).map(|t| t.kind)
-    }
+    fn peek_n_kind(&self, n: usize) -> Option<TokenKind> { self.peek_n(n).map(|t| t.kind) }
 
-    fn peek_kind(&self) -> Option<TokenKind> {
-        self.peek().map(|t| t.kind)
-    }
+    fn peek_kind(&self) -> Option<TokenKind> { self.peek().map(|t| t.kind) }
 
     fn peek_n(&self, n: usize) -> Option<Token> {
         let n = n.saturating_sub(1);
@@ -957,9 +894,7 @@ impl<'s> Parser<'s> {
         self.buf.get(cursor).cloned()
     }
 
-    fn has_next(&self) -> bool {
-        self.buf.len() > self.cursor
-    }
+    fn has_next(&self) -> bool { self.buf.len() > self.cursor }
 }
 
 #[derive(Debug, Copy, Clone)]

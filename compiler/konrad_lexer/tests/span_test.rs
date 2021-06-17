@@ -1,6 +1,5 @@
 use konrad_err::diagnostic::*;
-use konrad_lexer::lexer::*;
-use konrad_lexer::token::*;
+use konrad_lexer::{lexer::*, token::*};
 use konrad_span::span::*;
 use pretty_assertions::assert_eq;
 
@@ -340,13 +339,11 @@ fn get_filtered_tokens<S: Into<String>>(src: S) -> Vec<Token> {
     #[derive(Debug)]
     struct ErrDump<T> {
         tokens: Vec<T>,
-        errs: Vec<Diagnostic>,
+        errs:   Vec<Diagnostic>,
     }
 
-    let (tokens, errs): (
-        Vec<Result<Token, Diagnostic>>,
-        Vec<Result<Token, Diagnostic>>,
-    ) = Lexer::new(src, TEST_FILE_PATH).partition(Result::is_ok);
+    let (tokens, errs): (Vec<Result<Token, Diagnostic>>, Vec<Result<Token, Diagnostic>>) =
+        Lexer::new(src, TEST_FILE_PATH).partition(Result::is_ok);
     let tokens: Vec<_> = tokens
         .into_iter()
         .map(Result::unwrap)

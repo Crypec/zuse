@@ -1,16 +1,17 @@
-use crate::token::*;
-use konrad_span::span::*;
 use std::path::PathBuf;
 
 use konrad_session::session::*;
+use konrad_span::span::*;
+
+use crate::token::*;
 
 #[derive(Debug)]
 pub struct Lexer<'s> {
-    pos: Position,
+    pos:  Position,
     path: PathBuf,
 
     cursor: usize,
-    buf: Vec<char>,
+    buf:    Vec<char>,
 
     sess: &'s mut Session,
 }
@@ -56,36 +57,28 @@ impl<'s> Lexer<'s> {
             '%' => TokenKind::Mod,
             '*' => TokenKind::Star,
             '#' => TokenKind::Hash,
-            '^' => self
-                .map_if(|p| p == '^', TokenKind::Xor)
-                .unwrap_or(TokenKind::Caret),
-            '!' => self
-                .map_if(|p| p == '=', TokenKind::NotEq)
-                .unwrap_or(TokenKind::Bang),
+            '^' => self.map_if(|p| p == '^', TokenKind::Xor).unwrap_or(TokenKind::Caret),
+            '!' => self.map_if(|p| p == '=', TokenKind::NotEq).unwrap_or(TokenKind::Bang),
             '<' if self.peek() == Some('=') => {
                 self.inc_cursor(1);
                 TokenKind::LessEq
-            }
+            },
             '<' if self.peek() == Some('<') => {
                 self.inc_cursor(1);
                 TokenKind::LShift
-            }
+            },
             '<' => TokenKind::Less,
             '>' if self.peek() == Some('=') => {
                 self.inc_cursor(1);
                 TokenKind::GreaterEq
-            }
+            },
             '>' if self.peek() == Some('>') => {
                 self.inc_cursor(1);
                 TokenKind::RShift
-            }
+            },
             '>' => TokenKind::Greater,
-            '|' => self
-                .map_if(|c| c == '|', TokenKind::Or)
-                .unwrap_or(TokenKind::Sep),
-            '&' => self
-                .map_if(|c| c == '&', TokenKind::And)
-                .unwrap_or(TokenKind::Ref),
+            '|' => self.map_if(|c| c == '|', TokenKind::Or).unwrap_or(TokenKind::Sep),
+            '&' => self.map_if(|c| c == '&', TokenKind::And).unwrap_or(TokenKind::Ref),
             '-' => self
                 .map_if(|p| p == '>', TokenKind::ThinArrow)
                 .unwrap_or(TokenKind::Minus),
@@ -93,37 +86,37 @@ impl<'s> Lexer<'s> {
                 Some('=') => {
                     self.next_char()?;
                     TokenKind::ColEq
-                }
+                },
                 Some(':') => {
                     self.next_char()?;
                     TokenKind::ColCol
-                }
+                },
                 _ => TokenKind::Col,
             },
             '=' => match self.peek() {
                 Some('=') => {
                     self.next_char()?;
                     TokenKind::EqEq
-                }
+                },
                 Some('<') => {
                     self.next_char()?;
                     TokenKind::LessEq
-                }
+                },
                 Some('>') => {
                     self.next_char()?;
                     TokenKind::FatArrow
-                }
+                },
                 _ => TokenKind::Eq,
             },
             '.' => match (self.peek_n(1), self.peek_n(2)) {
                 (Some('.'), Some('=')) => {
                     self.inc_cursor(2);
                     TokenKind::Range(RangeKind::Inclusive)
-                }
+                },
                 (Some('.'), _) => {
                     self.inc_cursor(1);
                     TokenKind::Range(RangeKind::Exclusive)
-                }
+                },
                 (..) => TokenKind::Dot,
             },
             // TODO(Simon): handle multiline comments
@@ -132,7 +125,7 @@ impl<'s> Lexer<'s> {
                 self.advance_while(|c| c != '\n')?;
                 let comment = self.sub_string(start, self.cursor);
                 TokenKind::SLComment(comment)
-            }
+            },
             '/' if self.peek() == Some('*') => {
                 // skip start of comment
                 self.next_char()?;
@@ -147,29 +140,22 @@ impl<'s> Lexer<'s> {
                             self.next_char()?;
                             self.next_char()?;
                             break;
-                        }
+                        },
                         (Some(_), Some(_)) => self.next_char()?,
                         _ => {
-                            self.sess
-                                .span_err("Unclosed multiline comment", opening_span);
+                            self.sess.span_err("Unclosed multiline comment", opening_span);
                             return None;
-                        }
+                        },
                     };
                 }
                 let comment = self.sub_string(start, self.cursor);
                 TokenKind::MLComment(comment)
-            }
+            },
             '/' => TokenKind::Slash,
             '"' => self.lex_string(start)?,
-            '0' if self.peek() == Some('b') => {
-                self.lex_num(start, 2, 2, |c| matches!(c, '0' | '1'))?
-            }
-            '0' if self.peek() == Some('o') => {
-                self.lex_num(start, 8, 2, |c| matches!(c, '0'..='7'))?
-            }
-            '0' if self.peek() == Some('x') => {
-                self.lex_num(start, 16, 2, |c| matches!(c, '0'..='F' | '0'..='f'))?
-            }
+            '0' if self.peek() == Some('b') => self.lex_num(start, 2, 2, |c| matches!(c, '0' | '1'))?,
+            '0' if self.peek() == Some('o') => self.lex_num(start, 8, 2, |c| matches!(c, '0'..='7'))?,
+            '0' if self.peek() == Some('x') => self.lex_num(start, 16, 2, |c| matches!(c, '0'..='F' | '0'..='f'))?,
             '0'..='9' => self.lex_num(start, 10, 0, |c| matches!(c, '0'..='9'))?,
             _ if c.is_whitespace() => self.eat_whitespace()?,
             _ => self.lex_ident(start)?,
@@ -180,13 +166,7 @@ impl<'s> Lexer<'s> {
     }
 
     /// TODO(Simon): Implement float parsing
-    fn lex_num<F>(
-        &mut self,
-        start: usize,
-        radix: u32,
-        prefix_len: usize,
-        matches: F,
-    ) -> Option<TokenKind>
+    fn lex_num<F>(&mut self, start: usize, radix: u32, prefix_len: usize, matches: F) -> Option<TokenKind>
     where
         F: Fn(char) -> bool,
     {
@@ -204,10 +184,11 @@ impl<'s> Lexer<'s> {
                 self.sess.span_err(msg, sp).add_note(format!("{:?}", e));
 
                 // NOTE(Simon): Should we really emit a valid token?
-                // NOTE(Simon): This allows use to report more errors in a single run but we have
-                // NOTE(Simon): to be careful not to emit false diagnostic based on this token.
+                // NOTE(Simon): This allows use to report more errors in a single run but we
+                // have NOTE(Simon): to be careful not to emit false diagnostic
+                // based on this token.
                 Some(TokenKind::Lit(Lit::Num(0)))
-            }
+            },
         }
     }
 
@@ -255,9 +236,7 @@ impl<'s> Lexer<'s> {
         Span::new(start_lc, end_lc, self.path.clone())
     }
 
-    fn peek(&self) -> Option<char> {
-        self.peek_n(1)
-    }
+    fn peek(&self) -> Option<char> { self.peek_n(1) }
 
     fn peek_n(&self, n: usize) -> Option<char> {
         let n = n.saturating_sub(1);
@@ -286,7 +265,7 @@ impl<'s> Lexer<'s> {
                 } else {
                     None
                 }
-            }
+            },
             None => None,
         }
     }
@@ -300,22 +279,21 @@ impl<'s> Lexer<'s> {
         );
         self.buf[start..end].iter().collect()
     }
+
     fn inc_cursor(&mut self, n: usize) {
         self.cursor += n;
         self.pos.end_col += n;
     }
 
-    fn has_next(&self) -> bool {
-        self.buf.len() > self.cursor
-    }
+    fn has_next(&self) -> bool { self.buf.len() > self.cursor }
 }
 
 #[derive(Debug, Default)]
 struct Position {
-    start_line: usize,
+    start_line:   usize,
     current_line: usize,
-    start_col: usize,
-    end_col: usize,
+    start_col:    usize,
+    end_col:      usize,
 }
 
 impl Position {

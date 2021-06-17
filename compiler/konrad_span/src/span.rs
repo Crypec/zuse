@@ -1,18 +1,18 @@
-use std::cmp::*;
-use std::fmt;
-use std::fmt::{Debug, Formatter};
-use std::path::PathBuf;
+use std::{
+    cmp::*,
+    fmt,
+    fmt::{Debug, Formatter},
+    path::PathBuf,
+};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct LineColumn {
     pub line: usize,
-    pub col: usize,
+    pub col:  usize,
 }
 
 impl LineColumn {
-    pub const fn new(line: usize, col: usize) -> Self {
-        Self { line, col }
-    }
+    pub const fn new(line: usize, col: usize) -> Self { Self { line, col } }
 }
 
 /// Span is used to store the src location of nodes in the compiler
@@ -20,8 +20,8 @@ impl LineColumn {
 #[derive(Clone, Eq, PartialEq)]
 pub struct Span {
     pub start: LineColumn,
-    pub end: LineColumn,
-    pub path: PathBuf,
+    pub end:   LineColumn,
+    pub path:  PathBuf,
 }
 
 impl Span {
@@ -88,15 +88,14 @@ impl Ord for LineColumn {
 }
 
 impl PartialOrd for LineColumn {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     const DUMMY_PATH: &str = "TEST_PATH_DOES_NOT_EXIST.zs";
 
@@ -109,8 +108,8 @@ mod tests {
         };
         let expected = Span {
             start: LineColumn { line: 20, col: 10 },
-            end: LineColumn { line: 25, col: 42 },
-            path: DUMMY_PATH.into(),
+            end:   LineColumn { line: 25, col: 42 },
+            path:  DUMMY_PATH.into(),
         };
         assert_eq!(actual, expected);
     }
@@ -129,8 +128,8 @@ mod tests {
         let actual = rhs.merge(&lhs);
         let expected = Span {
             start: LineColumn { line: 10, col: 0 },
-            end: LineColumn { line: 25, col: 42 },
-            path: DUMMY_PATH.into(),
+            end:   LineColumn { line: 25, col: 42 },
+            path:  DUMMY_PATH.into(),
         };
         assert_eq!(actual, expected);
     }
