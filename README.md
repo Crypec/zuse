@@ -87,7 +87,8 @@ for _ := 0..300 {
 -- // A max age of 140 years seems to be a pretty good estimate.
 -- // At least according to wikipedia:
 -- // https://en.wikipedia.org/wiki/List_of_the_verified_oldest_people
--- // So if a user of your software claims to be Elvis Presley and 200 years old something is probably not right :D
+-- // So if a user of your software claims to be Elvis Presley and 200
+-- // years old something is probably not right :D
 Age :: 0..=140;
 
 -- // The #derive directive works pretty much like the one in rust 
