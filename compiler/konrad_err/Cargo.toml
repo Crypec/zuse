@@ -8,4 +8,6 @@ edition = "2018"
 
 [dependencies]
 konrad_span = {path = "../konrad_span"}
+
 typed-builder = "0.9.0"
+colored = "2.0.0"
