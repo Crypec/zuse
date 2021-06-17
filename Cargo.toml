@@ -6,6 +6,7 @@ members = [
 	"compiler/konrad_span",
 	"compiler/konrad_err",
 	"compiler/konrad_lexer",
-	"compiler/konrad_parser"
+	"compiler/konrad_parser",
+	"compiler/konrad_session",
 	"compiler/konrad_typer",
 ]
