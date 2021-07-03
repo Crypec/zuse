@@ -1,10 +1,13 @@
 use std::{convert::TryInto, path::PathBuf};
 
 use konrad_ast::*;
+
 #[allow(unused_imports)]
 use konrad_err::diagnostic::*;
+
 use konrad_lexer::token::*;
 use konrad_session::session::*;
+
 #[allow(unused_imports)]
 use konrad_span::span::*;
 
@@ -360,22 +363,40 @@ impl<'s> Parser<'s> {
         match self.peek_kind()? {
             TokenKind::Keyword(Keyword::For) => self.parse_for_loop(),
             TokenKind::Keyword(Keyword::While) => self.parse_while_loop(),
-            TokenKind::Ident(_) => self.parse_assign_or_vardef(),
-            _ => {
-                let expr = self.parse_expr()?;
-                if let Some(TokenKind::Semi) = self.peek_kind() {
-                    //block_value = Some(expr);
-                    if self.peek_kind()? != TokenKind::RBrace {
-                        self.sess.span_err(
-                            "If you wan't to yield a value from a block it must be the last statement in the block",
-                            expr.span,
-                        );
-                        todo!();
+
+            // FIXME(Simon): @CLEAN_PARSE_EXPR_STMT
+            // FIXME(Simon): We should really clean this up!
+            // FIXME(Simon): There are far too many calls to 'parse_expr_stmt'.
+            TokenKind::Ident(_) => {
+                for i in 1.. {
+                    match self.peek_n_kind(i) {
+                        Some(TokenKind::Eq) => return self.parse_assign(),
+                        Some(TokenKind::ColEq) => return self.parse_vardef(),
+                        Some(TokenKind::Semi) | None => return self.parse_expr_stmt(), // @CLEAN_PARSE_EXPR_STMT
+                        _ => continue,
                     }
-                    todo!()
                 }
-                todo!()
+                self.parse_expr_stmt() // @CLEAN_PARSE_EXPR_STMT
             },
+            _ => self.parse_expr_stmt(), // @CLEAN_PARSE_EXPR_STMT
+        }
+    }
+
+    // FIXME(Simon):
+    fn parse_expr_stmt(&mut self) -> Option<Stmt> {
+        let expr = self.parse_expr()?;
+        if self.peek_kind()? == TokenKind::Semi {
+            let span = self.next_t()?.span.merge(&expr.span);
+            Some(Stmt {
+                kind: StmtKind::Expr(expr),
+                span,
+            })
+        } else {
+            let span = expr.span.clone();
+            Some(Stmt {
+                kind: StmtKind::BlockValue(expr),
+                span,
+            })
         }
     }
 
@@ -476,8 +497,37 @@ impl<'s> Parser<'s> {
         })
     }
 
-    fn parse_assign_or_vardef(&mut self) -> Option<Stmt> {
+    fn parse_assign(&mut self) -> Option<Stmt> {
+        let target = self.parse_assign_target()?;
+        self.eat(TokenKind::Eq, "expected `=` after assignment target")?;
+        let expr = self.parse_expr()?;
+        let span = self
+            .eat(TokenKind::Semi, "expected terminating `;` after assignment")?
+            .span
+            .merge(&target.span);
+
+        Some(Stmt {
+            kind: StmtKind::Assign { target, expr },
+            span,
+        })
+    }
+
+    fn parse_assign_target(&mut self) -> Option<AssignTarget> {
         todo!();
+    }
+
+    fn parse_vardef(&mut self) -> Option<Stmt> {
+        let pat = self.parse_pattern()?;
+        self.eat(TokenKind::ColEq, "expected := to define variable")?;
+        let init = self.parse_expr()?;
+        let span = self
+            .eat(TokenKind::Semi, "expected terminating `;` after variable definition")?
+            .span
+            .merge(&pat.span);
+        Some(Stmt {
+            kind: StmtKind::VarDef { pat, init },
+            span,
+        })
     }
 
     fn parse_for_loop(&mut self) -> Option<Stmt> {
