@@ -1,3 +1,6 @@
+#![warn(clippy::nursery)]
+#![warn(clippy::perf)]
+
 use crate::compiler::*;
 
 mod compiler;
