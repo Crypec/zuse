@@ -25,7 +25,7 @@ pub enum Level {
     /// Hard compile time errors
     Error(Span),
     /// Soft compile time warnings. The compiler will still exit with
-    /// sucessfully even if you emit a Warning.
+    /// successfully even if you emit a Warning.
     Warning(Span),
 
     /// A Note can be used to give extra information to the user.
@@ -115,7 +115,7 @@ impl fmt::Display for Diagnostic {
                     sp.start.col + 1,
                 )?;
 
-                emit_src_span(&sp, color, &lines, f)?;
+                emit_src_span(sp, color, &lines, f)?;
                 if let Some(note) = &self.note {
                     writeln!(f, "{}", note)?;
                 }
