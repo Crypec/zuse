@@ -110,11 +110,11 @@ impl<'s> Parser<'s> {
     fn parse_decl(&mut self) -> Option<Decl> {
         let directive = self.peek_next_parsing_directive()?;
         match directive {
-            ParseDirective::Func => self.parse_fn_decl(),
-            ParseDirective::Enum => self.parse_enum_decl(),
-            ParseDirective::Struct => self.parse_struct_decl(),
-            ParseDirective::ConstDecl => self.parse_const_decl(),
-            ParseDirective::HashDirective => self.parse_directive_decl(),
+            NextDeclParseDirective::Func => self.parse_fn_decl(),
+            NextDeclParseDirective::Enum => self.parse_enum_decl(),
+            NextDeclParseDirective::Struct => self.parse_struct_decl(),
+            NextDeclParseDirective::ConstDecl => self.parse_const_decl(),
+            NextDeclParseDirective::HashDirective => self.parse_directive_decl(),
         }
     }
 
@@ -332,19 +332,19 @@ impl<'s> Parser<'s> {
     }
 
     fn parse_block(&mut self) -> Option<Block> {
-        let start = self.eat(TokenKind::RBrace, "expected `{` to open a new block")?.span;
+        let start = self.eat(TokenKind::LBrace, "expected `{` to open a new block")?.span;
 
         let mut stmts = vec![];
         while self.peek_kind()? != TokenKind::RBrace {
             let s = self.parse_stmt()?;
             if let Stmt {
                 kind: StmtKind::BlockValue(_),
-                span: sp,
+                span,
             } = &s
             {
                 if self.peek_kind()? != TokenKind::RBrace {
                     self.sess
-                        .span_err("Unexpected stmt after after block value", sp.clone())
+                        .span_err("Unexpected stmt after after block value", span.clone())
                         .add_note("Did you forget to add a terminating semicolon?");
                     return None;
                 }
@@ -911,17 +911,19 @@ impl<'s> Parser<'s> {
         Some(Path { segments, span })
     }
 
-    fn peek_next_parsing_directive(&self) -> Option<ParseDirective> {
+    fn peek_next_parsing_directive(&self) -> Option<NextDeclParseDirective> {
         let mut i = 0;
         loop {
             match self.peek_n_kind(i) {
-                Some(TokenKind::Keyword(Keyword::Enum)) => return Some(ParseDirective::Enum),
-                Some(TokenKind::Keyword(Keyword::Struct)) => return Some(ParseDirective::Struct),
+                Some(TokenKind::Keyword(Keyword::Enum)) => return Some(NextDeclParseDirective::Enum),
+                Some(TokenKind::Keyword(Keyword::Struct)) => return Some(NextDeclParseDirective::Struct),
                 Some(TokenKind::Lit(_) | TokenKind::RBracket | TokenKind::Plus | TokenKind::Minus) => {
-                    return Some(ParseDirective::ConstDecl)
+                    return Some(NextDeclParseDirective::ConstDecl)
                 },
-                Some(TokenKind::Col | TokenKind::LBrace | TokenKind::ThinArrow) => return Some(ParseDirective::Func),
-                Some(TokenKind::Hash) => return Some(ParseDirective::HashDirective),
+                Some(TokenKind::Col | TokenKind::LBrace | TokenKind::ThinArrow) => {
+                    return Some(NextDeclParseDirective::Func)
+                },
+                Some(TokenKind::Hash) => return Some(NextDeclParseDirective::HashDirective),
                 None => return None,
                 _ => i += 1,
             };
@@ -966,7 +968,7 @@ impl<'s> Parser<'s> {
 }
 
 #[derive(Debug, Copy, Clone)]
-enum ParseDirective {
+enum NextDeclParseDirective {
     Func,
     Enum,
     Struct,
