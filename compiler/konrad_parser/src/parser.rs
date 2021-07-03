@@ -88,26 +88,22 @@ impl<'s> Parser<'s> {
         file_node
     }
 
+    // TODO(Simon): Currently syncing the parser is not very granular because we are
+    // always TODO(Simon): searching for the next struct, enum or impl block.
+    // All other unreleated tokens TODO(Simon): simply get skipped! In order to
+    // provide a better user experience we should look TODO(Simon): into how we
+    // can make this more nuanced and maybe look at free functions or even
+    // TODO(Simon): single .
     fn sync_parser_state(&mut self) {
-        loop {
-            match self.peek() {
-                Some(Token {
-                    kind: TokenKind::Ident(_),
-                    ..
-                }) if matches!(
-                    self.peek_n_kind(3),
-                    Some(
-                        TokenKind::Keyword(Keyword::Enum)
-                            | TokenKind::Keyword(Keyword::Struct)
-                            | TokenKind::Keyword(Keyword::Impl)
-                    )
-                ) =>
-                {
-                    return
-                },
-                Some(_) => continue,
-                None => return,
+        while let Some(kind) = self.peek_kind() {
+            if let TokenKind::Ident(_) = kind {
+                if let Some(TokenKind::Keyword(Keyword::Enum | Keyword::Struct | Keyword::Impl)) = self.peek_n_kind(3) {
+                    return;
+                }
             }
+            // NOTE(Simon): This should never panic because we only get here if we can
+            // NOTE(Simon): successfully peek one token ahead.
+            self.next_t().expect("failed to advance parser in sync parser state");
         }
     }
 
