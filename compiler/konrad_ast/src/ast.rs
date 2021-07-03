@@ -91,6 +91,16 @@ pub enum StmtKind {
     /// the block and not terminated with a semicolon.
     BlockValue(Expr),
 
+    VarDef {
+        pat:  Pat,
+        init: Expr,
+    },
+
+    Assign {
+        target: AssignTarget,
+        expr:   Expr,
+    },
+
     For {
         var:  Pat,
         init: Expr,
@@ -158,6 +168,27 @@ pub struct StructMember {
     pub name: Ident,
     pub ty:   Ty,
     pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct AssignTarget {
+    pub kind: AssignTargetKind,
+    pub span: Span,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum AssignTargetKind {
+    /// This is our base case
+    /// example: foo = 42;
+    Var(Ident),
+
+    /// Assign to a struct
+    /// example: foo.bar = 42;
+    Field { lhs: Box<Self>, name: Ident },
+
+    /// Assign to a index
+    /// example: foo[42] = bar;
+    Index { lhs: Box<Self>, index: Expr },
 }
 
 // NOTE(Simon): This is just how we represent types in the ast after parsing.
