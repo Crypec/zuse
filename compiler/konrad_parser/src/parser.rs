@@ -359,11 +359,7 @@ impl<'s> Parser<'s> {
         match self.peek_kind()? {
             TokenKind::Keyword(Keyword::For) => self.parse_for_loop(),
             TokenKind::Keyword(Keyword::While) => self.parse_while_loop(),
-
-            // FIXME(Simon): @CLEAN_PARSE_EXPR_STMT
-            // FIXME(Simon): We should really clean this up!
-            // FIXME(Simon): There are far too many calls to 'parse_expr_stmt'.
-            TokenKind::Ident(_) => {
+// FIXME(Simon): @CLEAN_PARSE_EXPR_STMT // FIXME(Simon): We should really clean this up! // FIXME(Simon): There are far too many calls to 'parse_expr_stmt'. TokenKind::Ident(_) => {
                 for i in 1.. {
                     match self.peek_n_kind(i) {
                         Some(TokenKind::Eq) => return self.parse_assign(),
