@@ -3,6 +3,8 @@ target/
 llvm_ir_test/
 test.zs
 
+.idea/
+
 
 # ignore emacs editor files
 *~
