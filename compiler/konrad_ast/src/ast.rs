@@ -102,24 +102,28 @@ pub enum StmtKind {
     },
 
     For {
-        var:  Pat,
+        pat:  Pat,
         init: Expr,
+        body: Box<Stmt>,
     },
     While {
         cond: Expr,
-        body: Block,
+        body: Box<Stmt>,
     },
 
     WhileAssign {
         pat:  Pat,
         cond: Expr,
-        body: Block,
+        body: Box<Stmt>,
     },
     Loop {
-        body: Block,
+        body: Box<Stmt>,
     },
+
     If(IfStmt),
+
     ConstIf(IfStmt),
+
     IfAssign {
         pat:           Pat,
         cond:          Expr,

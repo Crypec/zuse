@@ -531,10 +531,32 @@ impl<'s> Parser<'s> {
     }
 
     fn parse_for_loop(&mut self) -> Option<Stmt> {
-        todo!();
+        let start = self.next_t()?.span;
+        let pat = self.parse_pattern()?;
+        self.eat(TokenKind::ColEq, "expected := to define binding in for loop")?;
+        let init = self.parse_expr()?;
+        let body = self.parse_stmt()?;
+        let span = start.merge(&body.span);
+        Some(Stmt {
+            kind: StmtKind::For {
+                pat,
+                init,
+                body: box body,
+            },
+            span,
+        })
     }
 
-    fn parse_while_loop(&mut self) -> Option<Stmt> { todo!() }
+    fn parse_while_loop(&mut self) -> Option<Stmt> {
+        let start = self.next_t()?.span; // consume `while` token
+        let cond = self.parse_expr()?;
+        let body = self.parse_stmt()?;
+        let span = start.merge(&body.span);
+        Some(Stmt {
+            kind: StmtKind::While { cond, body: box body },
+            span,
+        })
+    }
 
     pub fn parse_expr(&mut self) -> Option<Expr> { self.parse_range() }
 
