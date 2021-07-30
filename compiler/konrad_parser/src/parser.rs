@@ -504,8 +504,35 @@ impl<'s> Parser<'s> {
         })
     }
 
+    fn parse_assign_kind(&mut self, mut lhs: AssignTargetKind) -> Option<AssignTargetKind> {
+        loop {
+            lhs = match self.peek_kind()? {
+                //TokenKind::Ident(_) => AssignTarget::Var(self.parse_ident()?),
+                TokenKind::Dot => self.parse_assign_field(lhs)?,
+                TokenKind::LBracket => self.parse_assign_index(lhs)?,
+                _ => return Some(lhs),
+            }
+        }
+    }
+
+    fn parse_assign_field(&mut self, lhs: AssignTargetKind) -> Option<AssignTargetKind> {
+        self.next_t()?; // consume `.` token
+        let name = self.parse_ident("expected name of variable to assign to")?;
+        Some(AssignTargetKind::Field { lhs: box lhs, name })
+    }
+
+    fn parse_assign_index(&mut self, lhs: AssignTargetKind) -> Option<AssignTargetKind> {
+        self.next_t()?; // consume `{` token
+        let index = self.parse_expr()?;
+        self.eat(TokenKind::RBracket, "Expected closing `]` of index operation")?;
+        Some(AssignTargetKind::Index { lhs: box lhs, index })
+    }
+
     fn parse_assign_target(&mut self) -> Option<AssignTarget> {
-        todo!();
+        let name = self.parse_ident("expected name of variable to assign to")?;
+        let span = name.span.clone().clone();
+        let kind = self.parse_assign_kind(AssignTargetKind::Var(name))?;
+        Some(AssignTarget { kind, span })
     }
 
     fn parse_vardef(&mut self) -> Option<Stmt> {
